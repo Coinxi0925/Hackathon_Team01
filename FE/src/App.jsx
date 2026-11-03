@@ -1,122 +1,36 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import QuestionPage from './pages/question.jsx'      // 질문 화면 (파일명: question.jsx)
+import QuestionList from './pages/questionlist.jsx'  // 과거 질문 화면 (파일명: questionlist.jsx)
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  // 지금 보여줄 화면: 'question'(질문) 또는 'history'(과거 질문)
+  const [page, setPage] = useState('question')
 
+  // 질문 기록 목록 (두 화면이 같이 써야 해서 여기서 보관)
+  const [history, setHistory] = useState([])
+
+  // 지금 보고 있는 문서 정보 (나중에 PDF 업로드 화면에서 이 값을 채워줌)
+  const [doc, setDoc] = useState({
+    id: 1,                          // 문서 번호 (백엔드가 주는 값)
+    name: '업로드 파일이름.pdf',     // 업로드한 파일 이름
+    topic: '문서 주제~',       // 문서 주제 (없으면 빈 글자)
+    page: '쪽수~',                        // 현재 쪽수
+  })
+
+  // 질문을 보내면 호출됨 -> 기록 맨 앞에 추가 (최신순)
+  function addHistory(item) {
+    setHistory([item, ...history])
+  }
+
+  // 'history'면 과거 질문 화면
+  if (page === 'history') {
+    return (
+      <QuestionList doc={doc} history={history} goQuestion={() => setPage('question')} />
+    )
+  }
+
+  // 그 외에는 질문 화면
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <QuestionPage doc={doc}addHistory={addHistory} goHistory={() => setPage('history')} />
   )
 }
-
-export default App
