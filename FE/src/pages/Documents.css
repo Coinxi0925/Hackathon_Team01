@@ -1,39 +1,23 @@
 .documents h1 {
-  font-size: 2rem;
+  font-size: 2.2rem;
   margin: 0 0 8px;
 }
-
-.documents h2 {
-  font-size: 1.4rem;
-  margin: 32px 0 12px;
-}
-
 .documents__lead {
   color: #4a5568;
-  margin: 0 0 24px;
+  margin: 0 0 28px;
+}
+
+.section-title {
+  font-size: 1.6rem;
+  margin: 48px 0 16px;
 }
 
 /* 카드 공통 */
 .card {
   background: #fff;
   border: 1px solid #d9e0ee;
-  border-radius: 16px;
-  padding: 24px;
-}
-
-.card h2 {
-  margin-top: 0;
-}
-
-.card__desc {
-  color: #4a5568;
-  margin: 0 0 16px;
-}
-
-.card__hint {
-  color: #5a6578;
-  font-size: 0.9rem;
-  margin: 12px 0 0;
+  border-radius: 20px;
+  padding: 28px;
 }
 
 /* 버튼 */
@@ -41,92 +25,195 @@
   font: inherit;
   font-weight: 600;
   border-radius: 10px;
-  padding: 12px 20px;
+  padding: 14px 22px;
   cursor: pointer;
   border: 2px solid transparent;
 }
-
 .btn--primary {
   background: #2159cc;
   color: #fff;
 }
-
 .btn--primary:hover {
   background: #1a47a3;
 }
-
 .btn--secondary {
   background: #fff;
   color: #1a2233;
-  border-color: #b8c3da;
+  border-color: #cfd8ea;
 }
-
-.btn--large {
+.btn--secondary:hover {
+  background: #f0f4fb;
+}
+.btn--outline {
+  background: #eaf1ff;
+  color: #1a47a3;
+  border-color: #cfd8ea;
   width: 100%;
-  padding: 16px;
-  font-size: 1.1rem;
 }
-
 .btn:disabled {
   background: #9aa5bd;
   color: #fff;
   cursor: not-allowed;
 }
 
-/* 상태 메시지 */
-.status {
-  margin: 16px 0 0;
-  border-radius: 10px;
+/* 업로드 카드 */
+.upload-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 28px;
+}
+.upload-card__icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  background: #eaf1ff;
+  color: #2159cc;
+  font-size: 3rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+}
+.upload-card h2 {
+  font-size: 1.6rem;
+  margin: 0 0 8px;
+}
+.upload-card__desc {
+  color: #4a5568;
+  margin: 0 0 24px;
+}
+.btn--upload {
+  min-width: 220px;
 }
 
+/* 상태 메시지 */
+.status {
+  margin-top: 16px;
+  border-radius: 10px;
+  width: 100%;
+}
 .status--uploading,
 .status--success,
 .status--error {
   padding: 14px 16px;
 }
-
 .status--uploading {
   background: #eaf1ff;
   color: #1a47a3;
 }
-
 .status--success {
   background: #e8f6ec;
   color: #1b6b35;
 }
-
 .status--error {
   background: #fdeaea;
   color: #a31d1d;
 }
 
-/* 최근 자료 목록 */
+/* 최근 자료 영역: 왼쪽 목록 + 오른쪽 카드 */
+.recent {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
 .doc-list {
   list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
   display: grid;
   gap: 16px;
 }
-
+.doc-card {
+  display: flex;
+  gap: 24px;
+}
+.doc-card__thumb {
+  flex: none;
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
+  background: #eef2f8;
+  color: #334155;
+  font-size: 1.6rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+.doc-card__body {
+  flex: 1;
+  min-width: 0;
+}
 .doc-card h3 {
-  margin: 0 0 8px;
-  font-size: 1.2rem;
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+}
+.doc-card__meta {
+  margin: 0 0 12px;
+  color: #4a5568;
 }
 
-.doc-card__meta {
-  margin: 0 0 4px;
-  color: #4a5568;
+/* 배지 */
+.badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 999px;
+}
+.badge--blue {
+  background: #eaf1ff;
+  color: #1a47a3;
+}
+.badge--gray {
+  background: #eef2f8;
+  color: #475569;
 }
 
 .doc-card__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 16px;
+}
+.doc-card__actions .btn {
+  flex: 1;
+  min-width: 160px;
 }
 
-/* 화면에서는 안 보이지만 스크린리더는 읽는 요소 */
+/* 다시 찾아보기 카드 */
+.find-card {
+  background: #eaf1ff;
+  border-color: #eaf1ff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.find-card h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #1a47a3;
+}
+.find-card p {
+  margin: 8px 0 32px;
+}
+
+/* 좁은 화면 */
+@media (max-width: 860px) {
+  .recent {
+    grid-template-columns: 1fr;
+  }
+  .doc-card {
+    flex-direction: column;
+  }
+}
+
+/* 화면에는 안 보이지만 스크린리더는 읽는 요소 */
 .visually-hidden {
   position: absolute;
   width: 1px;

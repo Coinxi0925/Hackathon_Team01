@@ -1,0 +1,135 @@
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 8px;
+  top: 8px;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  z-index: 100;
+}
+
+/* 헤더 */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 20px 40px;
+  background: #fff;
+  border-bottom: 1px solid #dfe5f1;
+}
+.app-header__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 32px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.app-header__title {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+.app-header__sub {
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+.pill {
+  background: #eaf1ff;
+  color: #1a47a3;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+
+.breadcrumb {
+  margin: 20px 40px 0;
+  font-size: 0.9rem;
+  color: #4a5568;
+}
+
+/* 사이드바 + 본문 */
+.app-body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+  padding: 20px 40px 48px;
+  align-items: start;
+}
+
+.sidebar {
+  background: #fff;
+  border: 1px solid #d9e0ee;
+  border-radius: 20px;
+  padding: 24px 16px;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.sidebar__title {
+  font-size: 1.1rem;
+  margin: 0 0 16px 12px;
+}
+.sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px;
+  border-radius: 12px;
+  color: #1a2233;
+  text-decoration: none;
+  font-weight: 500;
+}
+.sidebar__link:hover {
+  background: #f0f4fb;
+}
+.sidebar__link--active {
+  background: #eaf1ff;
+  color: #1a47a3;
+  font-weight: 700;
+}
+.sidebar__footer {
+  border-top: 1px solid #dfe5f1;
+  margin: 24px 12px 0;
+  padding-top: 16px;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+.sidebar__footer p {
+  margin: 0 0 6px;
+}
+
+.app-main {
+  min-width: 0;
+}
+.app-main:focus {
+  outline: none;
+}
+
+/* 화면이 좁을 때: 사이드바를 위로 */
+@media (max-width: 860px) {
+  .app-header,
+  .app-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .breadcrumb {
+    margin-left: 16px;
+  }
+  .app-body {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    min-height: auto;
+  }
+}
