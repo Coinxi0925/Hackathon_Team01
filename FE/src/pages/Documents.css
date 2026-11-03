@@ -1,0 +1,137 @@
+.documents h1 {
+  font-size: 2rem;
+  margin: 0 0 8px;
+}
+
+.documents h2 {
+  font-size: 1.4rem;
+  margin: 32px 0 12px;
+}
+
+.documents__lead {
+  color: #4a5568;
+  margin: 0 0 24px;
+}
+
+/* 카드 공통 */
+.card {
+  background: #fff;
+  border: 1px solid #d9e0ee;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.card__desc {
+  color: #4a5568;
+  margin: 0 0 16px;
+}
+
+.card__hint {
+  color: #5a6578;
+  font-size: 0.9rem;
+  margin: 12px 0 0;
+}
+
+/* 버튼 */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 12px 20px;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.btn--primary {
+  background: #2159cc;
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: #1a47a3;
+}
+
+.btn--secondary {
+  background: #fff;
+  color: #1a2233;
+  border-color: #b8c3da;
+}
+
+.btn--large {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.1rem;
+}
+
+.btn:disabled {
+  background: #9aa5bd;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+/* 상태 메시지 */
+.status {
+  margin: 16px 0 0;
+  border-radius: 10px;
+}
+
+.status--uploading,
+.status--success,
+.status--error {
+  padding: 14px 16px;
+}
+
+.status--uploading {
+  background: #eaf1ff;
+  color: #1a47a3;
+}
+
+.status--success {
+  background: #e8f6ec;
+  color: #1b6b35;
+}
+
+.status--error {
+  background: #fdeaea;
+  color: #a31d1d;
+}
+
+/* 최근 자료 목록 */
+.doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.doc-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.doc-card__meta {
+  margin: 0 0 4px;
+  color: #4a5568;
+}
+
+.doc-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* 화면에서는 안 보이지만 스크린리더는 읽는 요소 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
