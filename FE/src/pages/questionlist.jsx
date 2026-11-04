@@ -1,63 +1,73 @@
 import { useState } from 'react'
 
-// 과거 질문 화면
-// history: App.jsx가 넘겨준 질문 기록 목록
-// goQuestion: 질문 화면으로 돌아가는 함수 (App.jsx가 넘겨줌)
+// doc: 문서 정보 / history: 질문 기록 목록 / goQuestion: 질문 화면으로 이동
 export default function QuestionList({ doc, history, goQuestion }) {
-  // 지금 펼쳐져 있는 질문의 id들을 기억 (처음엔 모두 접힘)
-  const [openIds, setOpenIds] = useState([])
+  const [openIds, setOpenIds] = useState([]) // 펼쳐진 질문 id들
 
-  // [답변 내용 펼치기/접기] 버튼을 눌렀을 때
   function toggle(id) {
     if (openIds.includes(id)) {
-      setOpenIds(openIds.filter((x) => x !== id)) // 펼쳐져 있으면 접기
+      setOpenIds(openIds.filter((x) => x !== id))
     } else {
-      setOpenIds([...openIds, id])                // 접혀 있으면 펼치기
+      setOpenIds([...openIds, id])
     }
   }
 
   return (
-    <div className="card">
-      <header className="header">
-        <span>모두의 페이지</span>
-        <button className="text-btn">학습 방식 설정</button>
+    <div className="page">
+      <header className="topbar">
+        <span className="logo">📖 모두의 페이지</span>
+        <div className="crumb">
+          <span>자료실</span>
+          <span>›</span>
+          <span>{doc.name}</span>
+          <span>›</span>
+          <span className="crumb-badge">과거 질문</span>
+        </div>
+        <div className="top-right">
+          <button>학습 방식 설정</button>
+        </div>
       </header>
 
-      {/* 제목 줄: 왼쪽 제목, 오른쪽 돌아가기 버튼 */}
-      <div className="title-row">
-        <div>
-          <h1>과거 질문</h1>
-          <p className="sub">{doc.name}의 기록만 표시합니다.</p>
-        </div>
-        <button onClick={goQuestion}>읽던 문서 {doc.page}쪽 시작으로 돌아가기</button>
+      {/* ---------- 돌아가기 링크 ---------- */}
+      <div className="back-link">
+        <button onClick={() => alert('문서 화면은 아직 준비 중입니다.')}>‹ 모두의 페이지로 돌아가기</button>
       </div>
 
-      <p>최신 질문순</p>
+      {/* ---------- 제목 줄 ---------- */}
+      <div className="list-title">
+        <div>
+          <h1>과거 질문</h1>
+          <p className="sub">{doc.name}에서 나눈 질문과 답변을 확인할 수 있습니다.</p>
+        </div>
+        <button onClick={goQuestion}>↶ 질문 화면으로 돌아가기</button>
+      </div>
 
-      {/* 기록이 없을 때 안내 */}
-      {history.length === 0 && <p>아직 질문 기록이 없습니다.</p>}
+      <p className="sub">최신 질문순</p>
 
-      {/* 기록 하나하나를 상자로 그림 */}
-      {history.map((item) => (
-        <div className="box" key={item.id}>
-          <h2>문서 {item.page}쪽 · {item.question}</h2>
+      {history.length === 0 && <p className="empty">아직 질문 기록이 없습니다.</p>}
 
-          <button className="text-btn" onClick={() => toggle(item.id)}>
-            {openIds.includes(item.id) ? '답변 내용 접기' : '답변 내용 펼치기'}
-          </button>
+      {/* ---------- 질문 카드들 ---------- */}
+      {history.map((item) => {
+        const open = openIds.includes(item.id) // 이 카드가 펼쳐져 있는지
+        return (
+          <div className="card" key={item.id}>
+            <div className="card-head">
+              <span className="badge">문서 {item.page}쪽</span>
+              <h2>{item.question}</h2>
+              <button onClick={() => alert('문서 화면은 아직 준비 중입니다.')}>
+                ↗ 문서 {item.page}쪽으로 이동
+              </button>
+            </div>
 
-          {/* 펼쳐져 있을 때만 답변이 보임 */}
-          {openIds.includes(item.id) && <p>{item.answer}</p>}
+            {/* 펼쳐졌을 때만 답변 보임 */}
+            {open && <p className="answer-line"><b>답변:</b> {item.answer}</p>}
 
-          <div className="right">
-            <button onClick={() => alert('문서 화면은 아직 없어요')}>
-              문서 {item.page}쪽 본문 시작으로 이동
+            <button className="toggle-btn" onClick={() => toggle(item.id)}>
+              {open ? '△ 답변 접기' : '▽ 답변 펼치기'}
             </button>
           </div>
-        </div>
-      ))}
-
-      <footer className="footer">07 / 모두의 페이지</footer>
+        )
+      })}
     </div>
   )
 }
