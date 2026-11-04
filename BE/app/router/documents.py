@@ -1,4 +1,9 @@
 import uuid
+import pymupdf
+from fastapi import BackgroundTasks
+from app.database import SessionLocal
+from app.supabase import storage_client, BUCKET_NAME
+
 from pathlib import Path
 
 from fastapi import (
@@ -161,3 +166,203 @@ def upload_document(
             status_code=500,
             detail="PDF 업로드 중 오류가 발생했습니다."
         )
+
+# PDF 다운로드 후 페이지별 텍스트 추출
+def process_pdf_background(document_id: str, storage_path: str):
+    db = SessionLocal()
+
+    try:
+        # Supabase Storage에서 PDF 다운로드
+        pdf_bytes = storage_client.storage.from_(BUCKET_NAME).download(
+            storage_path
+        )
+
+        # PDF 열기
+        pdf = pymupdf.open(
+            stream=pdf_bytes,
+            filetype="pdf"
+        )
+
+        total_pages = len(pdf)
+
+        # 기존 페이지 데이터 삭제
+        db.execute(
+            text("""
+                DELETE FROM pages
+                WHERE document_id = :document_id
+            """),
+            {"document_id": document_id}
+        )
+
+        # 페이지별 텍스트 추출 및 DB 저장
+        for index, page in enumerate(pdf):
+            page_number = index + 1
+
+            # 페이지 전체 텍스트 추출
+            full_text = page.get_text("text")
+
+            # 첫 번째 줄을 페이지 제목으로 사용
+            lines = [
+                line.strip()
+                for line in full_text.splitlines()
+                if line.strip()
+            ]
+
+            title = lines[0][:200] if lines else f"페이지 {page_number}"
+            
+            # db에 삽입
+            db.execute(
+                text("""
+                    INSERT INTO pages (
+                        document_id,
+                        page_number,
+                        title,
+                        full_text
+                    )
+                    VALUES (
+                        :document_id,
+                        :page_number,
+                        :title,
+                        :full_text
+                    )
+                """),
+                {
+                    "document_id": document_id,
+                    "page_number": page_number,
+                    "title": title,
+                    "full_text": full_text
+                }
+            )
+
+        pdf.close()
+
+        # 처리 완료 상태로 변경
+        db.execute(
+            text("""
+                UPDATE documents
+                SET status = 'completed',
+                    total_pages = :total_pages
+                WHERE id = :document_id
+            """),
+            {
+                "document_id": document_id,
+                "total_pages": total_pages
+            }
+        )
+
+        db.commit()
+
+        print(f"PDF 처리 완료: {document_id}, 총 {total_pages}페이지")
+
+    except Exception as e:
+        db.rollback()
+
+        # 처리 실패 상태로 변경
+        db.execute(
+            text("""
+                UPDATE documents
+                SET status = 'failed'
+                WHERE id = :document_id
+            """),
+            {"document_id": document_id}
+        )
+
+        db.commit()
+
+        print("PDF 처리 오류:", str(e))
+
+    finally:
+        db.close()
+        
+#PDF 처리 요청 API
+
+@router.post("/{document_id}/process", status_code=202)
+def process_document(
+    document_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # 해당 문서가 현재 사용자 소유인지 확인
+    document = db.execute(
+        text("""
+            SELECT id, storage_path, status
+            FROM documents
+            WHERE id = :document_id
+              AND user_id = :user_id
+        """),
+        {
+            "document_id": document_id,
+            "user_id": str(current_user.id)
+        }
+    ).mappings().first()
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="문서를 찾을 수 없습니다."
+        )
+
+    if document["status"] == "processing":
+        raise HTTPException(
+            status_code=409,
+            detail="이미 처리 중인 문서입니다."
+        )
+
+    # 상태를 processing으로 변경
+    db.execute(
+        text("""
+            UPDATE documents
+            SET status = 'processing'
+            WHERE id = :document_id
+        """),
+        {"document_id": document_id}
+    )
+
+    db.commit()
+
+    # 함수 호출하여 백그라운드에서 PDF 처리 시작
+    background_tasks.add_task(
+        process_pdf_background,
+        document_id,
+        document["storage_path"]
+    )
+
+    return {
+        "document_id": document_id,
+        "status": "processing",
+        "message": "PDF 처리가 시작되었습니다."
+    }
+    
+# PDF 상태 조회 API
+
+@router.get("/{document_id}/status")
+def get_document_status(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    document = db.execute(
+        text("""
+            SELECT id, status, total_pages
+            FROM documents
+            WHERE id = :document_id
+              AND user_id = :user_id
+        """),
+        {
+            "document_id": document_id,
+            "user_id": str(current_user.id)
+        }
+    ).mappings().first()
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="문서를 찾을 수 없습니다."
+        )
+
+    return {
+        "document_id": str(document["id"]),
+        "status": document["status"],
+        "total_pages": document["total_pages"]
+    }
