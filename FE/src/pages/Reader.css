@@ -3,6 +3,16 @@
    [수정 가능] 색상(#0a4fe0 = 파란색), 크기, 간격은 이 파일에서 수정
    ============================================================ */
 
+
+/* 전체 화면 너비 및 여백 */
+.reader {
+  width: calc(100% - 80px);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 0;
+  box-sizing: border-box;
+}
+
 .reader__top { margin-bottom: 16px; }
 .back-link {
   display: inline-block;
@@ -166,4 +176,19 @@
 @media (max-width: 1000px) {
   .reader__layout { grid-template-columns: 1fr; }
   .doc-title__name { font-size: 1.6rem; }
+}
+
+@media (max-width: 1000px) {
+  .reader {
+    width: calc(100% - 32px);
+    padding: 16px 0;
+  }
+
+  .reader__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-title__name {
+    font-size: 1.6rem;
+  }
 }
