@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
+import Reader from "./pages/Reader";
 import QuestionPage from "./pages/question.jsx";      // [내 화면] 질문 화면
 import QuestionList from "./pages/questionlist.jsx";  // [내 화면] 과거 질문 화면
 
@@ -20,9 +21,9 @@ export default function App() {
     page: "[쪽수]",
   });
 
-  // 질문을 보내면 기록 맨 앞에 추가 (최신순)
+  // 질문을 보내면 기록 맨 앞에 추가 (최신순) (prev추가)
   function addHistory(item) {
-    setHistory([item, ...history]);
+    setHistory((prev) => [item, ...prev]);
   }
 
     return (
@@ -33,6 +34,23 @@ export default function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/documents" element={<Documents />} />
       </Route>
+
+            {/* 문서 학습 화면 */}
+<Route //route 추가
+  path="/documents/:id/pages/:pageNumber"
+  element={
+    <Reader
+      onAsk={(pageInfo) => {
+        setDoc(pageInfo);
+        navigate("/question");
+      }}
+      onHistory={(pageInfo) => {
+  setDoc(pageInfo);
+  navigate("/history");
+}}
+    />
+  }
+/>
 
       {/* 내 화면: Layout 밖 (자체 헤더 사용, 화면 꽉 차게) */}
       <Route

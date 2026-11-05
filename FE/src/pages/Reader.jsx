@@ -10,7 +10,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { getDocumentPages } from "../api/pages";
 import "./Reader.css";
 
-export default function Reader() {
+export default function Reader({ onAsk, onHistory }) {
   const { id, pageNumber } = useParams(); // 주소에서 문서ID, 쪽 번호를 꺼냄
   const navigate = useNavigate();
   const current = Number(pageNumber) || 1;
@@ -168,21 +168,36 @@ export default function Reader() {
 
             {/* [백엔드 연동] 다음 작업: 질문 패널 열기 (명세서 6-1 POST /pages/{page_id}/questions) */}
             <button
-              type="button"
-              className="ask-btn"
-              onClick={() => setAnnounce("AI 질문 기능은 준비 중입니다.")}
-            >
-              문서 {current}쪽에 질문하기
-            </button>
+  type="button"
+  className="ask-btn"
+  onClick={() =>
+    onAsk({
+      id: id,
+      name: doc.file_name,
+      topic: page?.title || "",
+      page: current,
+    })
+  }
+>
+  문서 {current}쪽에 질문하기
+</button>
 
             {/* [수정 가능] 과거 질문 화면이 생기면 해당 주소로 이동 */}
+            
             <button
-              type="button"
-              className="past-btn"
-              onClick={() => setAnnounce("과거 질문 보기는 준비 중입니다.")}
-            >
-              과거 질문 보기 ›
-            </button>
+  type="button"
+  className="past-btn"
+  onClick={() =>
+    onHistory({
+      id: id,
+      name: doc.file_name,
+      topic: page?.title || "",
+      page: current,
+    })
+  }
+>
+  과거 질문 보기 ›
+</button>
           </section>
         </div>
       </div>
