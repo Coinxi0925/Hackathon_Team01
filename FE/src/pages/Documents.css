@@ -1,0 +1,243 @@
+/* ============================================================
+   src/pages/Documents.css  (화면 2: 내 학습 자료실)
+   [수정 가능] 색상(#0a4fe0 = 파란색), 크기, 간격은 디자인 변경 시 이 파일에서 수정
+   ============================================================ */
+
+.library h1 {
+  font-size: 2.8rem;
+  margin: 16px 0 8px;
+  color: #0a1a3a;
+}
+.library__lead {
+  font-size: 1.15rem;
+  color: #1f2937;
+  margin: 0 0 32px;
+}
+
+/* 업로드 버튼 + 안내 문구를 가로로 배치 */
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.upload-btn {
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: #0a4fe0;
+  color: #fff;
+  border: none;
+  border-radius: 18px;
+  padding: 20px 40px;
+  min-width: 300px;
+  cursor: pointer;
+}
+.upload-btn:hover {
+  background: #0840b8;
+}
+.upload-btn:disabled {
+  background: #8d9bb8;
+  cursor: not-allowed;
+}
+.upload-row__hint {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.05rem;
+}
+
+/* 업로드 결과 안내 박스 (idle일 땐 숨김) */
+.status {
+  margin-top: 16px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.status--uploading,
+.status--success,
+.status--error {
+  padding: 14px 20px;
+}
+.status--uploading {
+  background: #eaf1ff;
+  color: #1a47a3;
+}
+.status--success {
+  background: #e8f6ec;
+  color: #1b6b35;
+}
+.status--error {
+  background: #fdeaea;
+  color: #a31d1d;
+}
+
+/* "내 학습 자료 (총 3개)" + 정렬 드롭다운 */
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 40px 0 20px;
+  gap: 16px;
+}
+.list-head h2 {
+  margin: 0;
+  font-size: 1.9rem;
+  color: #0a1a3a;
+}
+.list-head__count {
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: #334155;
+}
+.sort select {
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  color: #0a1a3a;
+  border: 2px solid #b8c3da;
+  border-radius: 14px;
+  padding: 14px 20px;
+  cursor: pointer;
+}
+
+/* 문서 목록 */
+.doc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+}
+
+/* 문서 한 줄: 아이콘 | 구분선 | 정보 | 버튼 */
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  background: #fff;
+  border: 2px solid #c9d3e8;
+  border-radius: 28px;
+  padding: 24px 32px;
+}
+/* 강조 행: 이어 읽기 할 문서 (파란 테두리 + 연한 파란 배경) */
+.doc-row--highlight {
+  border: 3px solid #0a4fe0;
+  background: #eaf3ff;
+}
+
+/* PDF 아이콘: 흰 종이 + 빨간 PDF 라벨을 CSS로 흉내 낸 것 */
+.pdf-icon {
+  flex: none;
+  width: 72px;
+  height: 88px;
+  padding-right: 28px;
+  box-sizing: content-box;
+  border-right: 2px solid #d9e0ee; /* 아이콘과 정보 사이 세로 구분선 */
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  position: relative;
+}
+.pdf-icon::before {
+  content: "PDF";
+  background: #e5202e;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 6px;
+  position: relative;
+  z-index: 1;
+}
+.pdf-icon {
+  font-size: 0; /* 안쪽 글자 "PDF"는 ::before로 대신 그려서 숨김 */
+}
+
+.doc-row__info {
+  flex: 1;
+  min-width: 0;
+}
+.doc-row__info h3 {
+  margin: 0 0 6px;
+  font-size: 1.7rem;
+  color: #0a1a3a;
+  overflow-wrap: anywhere; /* 긴 파일명은 줄바꿈 */
+}
+.doc-row__info p {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+/* 읽기 버튼: 기본은 흰 바탕 테두리, primary는 파란 바탕 */
+.read-btn {
+  flex: none;
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: #fff;
+  color: #0a1a3a;
+  border: 2px solid #0a1a3a;
+  border-radius: 18px;
+  padding: 20px 36px;
+  min-width: 290px;
+  cursor: pointer;
+}
+.read-btn:hover {
+  background: #f0f4fb;
+}
+.read-btn--primary {
+  background: #0a4fe0;
+  color: #fff;
+  border-color: #0a4fe0;
+}
+.read-btn--primary:hover {
+  background: #0840b8;
+}
+.read-btn:disabled {
+  background: #e5e9f2;
+  color: #6b7280;
+  border-color: #c9d3e8;
+  cursor: not-allowed;
+}
+
+.empty {
+  background: #fff;
+  border: 2px dashed #c9d3e8;
+  border-radius: 20px;
+  padding: 32px;
+  text-align: center;
+  color: #334155;
+}
+
+/* 눈에는 안 보이지만 스크린리더는 읽는 요소 */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 좁은 화면: 문서 행을 세로로 쌓음 */
+@media (max-width: 860px) {
+  .library h1 {
+    font-size: 2rem;
+  }
+  .doc-row {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+  .pdf-icon {
+    border-right: none;
+    padding-right: 0;
+  }
+  .read-btn {
+    width: 100%;
+    min-width: 0;
+  }
+  .upload-btn {
+    width: 100%;
+  }
+}
