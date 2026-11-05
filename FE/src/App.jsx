@@ -1,30 +1,60 @@
-// ============================================================
-// src/App.jsx
-// 역할: "어떤 주소(URL)에서 어떤 화면을 보여줄지" 정하는 라우팅 지도
-// - 모든 화면은 <Layout />(공통 헤더) 안에 들어감
-// ============================================================
-import { Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Settings from "./pages/Settings";
 import Documents from "./pages/Documents";
+import QuestionPage from "./pages/question.jsx";      // [내 화면] 질문 화면
+import QuestionList from "./pages/questionlist.jsx";  // [내 화면] 과거 질문 화면
 
 export default function App() {
-  return (
+  const navigate = useNavigate();
+
+  // [내 화면용] 질문 기록 (두 화면이 같이 써서 여기서 보관)
+  const [history, setHistory] = useState([]);
+
+  // [내 화면용] 현재 문서 정보 (나중에 PDF/문서 화면에서 채워줌)
+  const [doc, setDoc] = useState({
+    id: 1,
+    name: "[업로드 파일이름.pdf]",
+    topic: "[문서 주제]",
+    page: "[쪽수]",
+  });
+
+  // 질문을 보내면 기록 맨 앞에 추가 (최신순)
+  function addHistory(item) {
+    setHistory([item, ...history]);
+  }
+
+    return (
     <Routes>
+      {/* 팀원 화면: 공통 헤더(Layout) 안 */}
       <Route element={<Layout />}>
-        {/* 첫 접속(/)하면 학습 방식 선택 화면으로 보냄 */}
-        {/* [백엔드 연동] 로그인 기능이 붙으면: 로그인 전 → /login, 로그인 후 → /documents 로 분기하도록 변경 */}
         <Route path="/" element={<Navigate to="/settings" replace />} />
-
-        {/* 화면 1: 학습 방식 선택 */}
         <Route path="/settings" element={<Settings />} />
-
-        {/* 화면 2: 내 학습 자료실 */}
         <Route path="/documents" element={<Documents />} />
-
-        {/* 화면 3: 문서 학습 (Reader) - 다음 작업에서 아래처럼 추가 예정
-            <Route path="/documents/:id/pages/:pageNumber" element={<Reader />} /> */}
       </Route>
+
+      {/* 내 화면: Layout 밖 (자체 헤더 사용, 화면 꽉 차게) */}
+      <Route
+        path="/question"
+        element={
+          <QuestionPage
+            doc={doc}
+            addHistory={addHistory}
+            goHistory={() => navigate("/history")}
+          />
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <QuestionList
+            doc={doc}
+            history={history}
+            goQuestion={() => navigate("/question")}
+          />
+        }
+      />
     </Routes>
   );
 }
