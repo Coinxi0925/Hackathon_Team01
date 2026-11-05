@@ -7,6 +7,7 @@ import Reader from "./pages/Reader";
 import QuestionPage from "./pages/question.jsx";
 import QuestionList from "./pages/questionlist.jsx";
 import Home from "./pages/Home.jsx";
+import Signup from "./pages/Signup.jsx";
 
 export default function App() {
   const navigate = useNavigate();
@@ -37,6 +38,8 @@ export default function App() {
 
       {/* 홈: Layout 밖, 자체 헤더 사용 (소개 + 로그인) */}
       <Route path="/" element={<Home />} />
+      //회원가입 기능 추가
+      <Route path="/signup" element={<Signup />} />
 
       {/* 문서 학습 화면 */}
       <Route

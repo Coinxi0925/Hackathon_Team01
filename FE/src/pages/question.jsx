@@ -1,6 +1,7 @@
 import './question.css'
 import { useState } from 'react'
 import { askQuestion } from '../api/api.js'
+import Logo from "../components/Logo";
 
 // doc: 문서 정보 (name, page 등) / addHistory: 기록 저장 / goHistory: 과거 질문 화면으로 이동
 export default function QuestionPage({ doc, addHistory, goHistory, goSettings, goDocument }) {
@@ -29,7 +30,7 @@ export default function QuestionPage({ doc, addHistory, goHistory, goSettings, g
     <div className="page qa">
       {/* ---------- 맨 위 바: 로고 / 경로 / 설정 버튼 ---------- */}
       <header className="topbar">
-        <span className="logo" onClick={() => goDocument()}>📖 모두의 페이지</span>
+        <Logo onClick={() => goDocument()} className="logo" />
         <div className="crumb">
           <span>자료실</span>
           <span>›</span>

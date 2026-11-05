@@ -25,11 +25,8 @@
 .app-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 18px 40px;
-  background: #fafcff;
-  border-bottom: 1px solid #dfe5f1;
-  flex-wrap: wrap; /* 화면이 좁으면 줄바꿈 */
+  min-height: 80px;
+  padding: 10px 40px;
 }
 
 /* 로고 + 서비스 이름 */

@@ -1,6 +1,7 @@
 import './question.css'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Logo from "../components/Logo";
 
 // doc: 문서 정보 / history: 질문 기록 목록 / goQuestion: 질문 화면으로 이동
 export default function QuestionList({ doc, history, goQuestion, goSettings, goDocument }) {
@@ -18,7 +19,7 @@ export default function QuestionList({ doc, history, goQuestion, goSettings, goD
   return (
     <div className="page qa">
       <header className="topbar">
-        <span className="logo" onClick={() => navigate('/documents')}>📖 모두의 페이지</span>
+        <Logo to="/documents" className="logo" />
         <div className="crumb">
           <span>자료실</span>
           <span>›</span>

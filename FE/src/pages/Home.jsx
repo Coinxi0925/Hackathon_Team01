@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import heroImg from '../assets/pageofall.png'
 import './Home.css'
+import Logo from "../components/Logo";
 
 // 주요 기능 카드 4개
 const FEATURES = [
@@ -40,7 +41,7 @@ export default function Home() {
   return (
     <div className="home">
       <header className="home-topbar">
-        <span className="home-logo">📖 모두의 페이지</span>
+        <Logo to="/" className="home-logo" />
         <div className="home-nav">
           <button type="button" className="home-btn-outline" onClick={() => navigate('/')}>
             로그인
