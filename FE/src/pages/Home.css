@@ -1,0 +1,267 @@
+/* ===== 홈(소개 + 로그인) 전용 스타일 =====
+   모든 규칙이 .home 안에서만 적용돼요. */
+.home { outline: 5px solid red; }
+.home {
+  --blue: #0a4fe0;
+  --blue-soft: #eaf3ff;
+  --line: #c9d3e8;
+  --text: #0a1a3a;
+  --sub: #334155;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: #FAFBFD;
+}
+
+/* ===== 맨 위 바 ===== */
+.home .home-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 3vw;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.home .home-logo {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.home .home-nav {
+  display: flex;
+  gap: 12px;
+}
+
+.home .home-btn-outline,
+.home .home-btn-fill {
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.home .home-btn-outline {
+  background: #fff;
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+
+.home .home-btn-fill {
+  background: var(--blue);
+  color: #fff;
+  border: 1px solid var(--blue);
+}
+
+/* ===== 본문: 왼쪽 + 오른쪽 (같은 높이로 늘어남) ===== */
+.home .home-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 40px;
+  align-items: stretch;
+  padding: 40px 3vw 60px;
+}
+
+/* ===== 왼쪽 ===== */
+.home .home-left {
+  min-width: 0;
+}
+
+.home .home-badge {
+  display: inline-block;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 6px 18px;
+  border-radius: 20px;
+}
+
+/* 제목 영역(왼쪽) + 이미지(오른쪽) */
+.home .home-hero {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.home .home-hero-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.home .home-hero-image {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home .home-hero-image img {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+}
+
+.home .home-left h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  margin: 20px 0 12px;
+}
+
+.home .home-lead {
+  font-size: 1.3rem;
+  margin: 0 0 28px;
+}
+
+.home .home-start {
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 16px 36px;
+  cursor: default;   /* 눌러도 반응 없음 */
+}
+
+.home .home-left h2 {
+  font-size: 1.9rem;
+  font-weight: 800;
+  margin: 40px 0 16px;
+}
+
+.home .home-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.home .home-feature {
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.home .home-feature-icon {
+  font-size: 2rem;
+}
+
+.home .home-feature h3 {
+  font-size: 1.2rem;
+  margin: 8px 0;
+}
+
+.home .home-feature p {
+  font-size: 1rem;
+  margin: 0;
+  color: var(--sub);
+}
+
+.home .home-notice {
+  margin-top: 24px;
+  background: var(--blue-soft);
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 1.05rem;
+}
+
+/* ===== 오른쪽: 로그인 박스가 위아래로 꽉 참 ===== */
+.home .home-right {
+  display: flex;
+}
+
+.home .home-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;   /* 박스 안에서 내용은 세로 가운데 */
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  padding: 32px;
+}
+
+.home .home-card h2 {
+  font-size: 1.9rem;
+  font-weight: 800;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.home .home-card-sub {
+  font-size: 1rem;
+  color: var(--sub);
+  text-align: center;
+  margin: 0 0 24px;
+}
+
+.home .home-card label {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 12px 0 8px;
+}
+
+.home .home-card input {
+  font: inherit;
+  font-size: 1.05rem;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.home .home-card input:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.home .home-error {
+  color: #a31d1d;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 12px 0 0;
+}
+
+.home .home-submit {
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 24px;
+  cursor: pointer;
+}
+
+.home .home-submit:hover {
+  background: #0840b8;
+}
+
+/* ===== 좁은 화면: 위아래로 쌓기 ===== */
+@media (max-width: 1000px) {
+  .home .home-body {
+    grid-template-columns: 1fr;
+  }
+  .home .home-hero {
+    flex-wrap: wrap;
+  }
+  .home .home-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

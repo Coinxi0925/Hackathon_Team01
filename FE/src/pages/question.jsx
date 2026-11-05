@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { askQuestion } from '../api/api.js'
 
 // doc: 문서 정보 (name, page 등) / addHistory: 기록 저장 / goHistory: 과거 질문 화면으로 이동
-export default function QuestionPage({ doc, addHistory, goHistory }) {
+export default function QuestionPage({ doc, addHistory, goHistory, goSettings, goDocument }) {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [status, setStatus] = useState('')
@@ -29,7 +29,7 @@ export default function QuestionPage({ doc, addHistory, goHistory }) {
     <div className="page qa">
       {/* ---------- 맨 위 바: 로고 / 경로 / 설정 버튼 ---------- */}
       <header className="topbar">
-        <span className="logo">📖 모두의 페이지</span>
+        <span className="logo" onClick={() => goDocument()}>📖 모두의 페이지</span>
         <div className="crumb">
           <span>자료실</span>
           <span>›</span>
@@ -40,7 +40,7 @@ export default function QuestionPage({ doc, addHistory, goHistory }) {
         <div className="top-right">
           {/* 피그마엔 없지만 과거 질문으로 가는 길이 필요해서 넣어 둔 버튼 */}
           <button onClick={goHistory}>과거 질문</button>
-          <button>학습 방식 설정</button>
+          <button onClick={goSettings}>학습 방식 설정</button>
         </div>
       </header>
 
@@ -80,7 +80,7 @@ export default function QuestionPage({ doc, addHistory, goHistory }) {
       )}
 
       {/* ---------- 맨 아래 버튼 ---------- */}
-      <button className="back-btn" onClick={() => alert('문서 화면은 아직 준비 중입니다.')}>
+      <button className="back-btn" onClick={() => goDocument()}>
         ← 읽던 위치로 복귀하기
       </button>
     </div>
