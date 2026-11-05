@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from sqlalchemy import text
 from app.database import engine
-from app.router import documents, auth
-from app.router import pages
+from app.router import documents, auth, pages, questions
 
 app = FastAPI(
     title="TEAM 01",
@@ -14,6 +13,8 @@ app = FastAPI(
 app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(pages.router)
+app.include_router(questions.router)
+app.include_router(questions.question_detail_router)
 
 @app.get("/")
 def home():

@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     SUPABASE_PUBLISHABLE_KEY: str
     SUPABASE_SECRET_KEY: str
     SUPABASE_JWKS_URL: str
+    
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+
 
     model_config = SettingsConfigDict(
         env_file=".env",
