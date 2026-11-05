@@ -1,48 +1,71 @@
-import { useRef, useState } from "react";
+// ============================================================
+// src/pages/Documents.jsx  (화면 2: 내 학습 자료실)
+// 역할: PDF 업로드 + 내 문서 목록 표시 + 정렬 + "이어 읽기/읽기" 버튼
+// 사용 API: getDocuments(5-1), uploadDocument(3-1)  → src/api/documents.js
+// ============================================================
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { uploadDocument } from "../api/documents";
+import { getDocuments, uploadDocument } from "../api/documents";
 import "./Documents.css";
 
-const MAX_SIZE_MB = 20; // 임시값: 백엔드에 확인 필요
+// [수정 가능] 업로드 용량 제한(MB). [백엔드 연동] 백엔드의 실제 최대 용량을 확인해서 맞추기
+const MAX_SIZE_MB = 20;
 
-// 가짜 데이터 (last_read_page, question_count, note_count는 API 명세서에 아직 없는 필드)
-const initialDocuments = [
-  {
-    document_id: "mock-1",
-    file_name: "생리학 3주차.pdf",
-    total_pages: 40,
-    last_read_page: 15,
-    question_count: 4,
-    note_count: 3,
-  },
-  {
-    document_id: "mock-2",
-    file_name: "약품분석학 2주차.pdf",
-    total_pages: 20,
-    last_read_page: null,
-    question_count: 0,
-    note_count: 0,
-  },
+// [수정 가능] 정렬 옵션 (value는 아래 sortDocuments 함수와 연결)
+const SORT_OPTIONS = [
+  { value: "recent", label: "최근 학습순" },
+  { value: "name", label: "이름순" },
 ];
 
+// 선택한 기준으로 목록을 정렬해서 돌려줌 (원본 배열은 건드리지 않음)
+function sortDocuments(list, sortKey) {
+  const copied = [...list];
+  if (sortKey === "name") {
+    return copied.sort((a, b) => a.file_name.localeCompare(b.file_name, "ko"));
+  }
+  // recent: 최근에 학습한 문서가 위로, 학습 기록 없는 문서는 아래로
+  return copied.sort((a, b) => {
+    const timeA = a.last_studied_at ? new Date(a.last_studied_at).getTime() : 0;
+    const timeB = b.last_studied_at ? new Date(b.last_studied_at).getTime() : 0;
+    return timeB - timeA;
+  });
+}
+
 export default function Documents() {
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [status, setStatus] = useState("idle"); // idle | uploading | success | error
-  const [message, setMessage] = useState("");
-  const fileInputRef = useRef(null);
+  const [documents, setDocuments] = useState([]); // 문서 목록
+  const [loading, setLoading] = useState(true); // 목록 불러오는 중인지
+  const [sortKey, setSortKey] = useState("recent"); // 현재 정렬 기준
+  const [status, setStatus] = useState("idle"); // 업로드 상태: idle | uploading | success | error
+  const [message, setMessage] = useState(""); // 업로드 결과 안내 문구
+  const fileInputRef = useRef(null); // 숨겨진 파일 입력칸을 가리키는 도구
   const navigate = useNavigate();
 
+  // 화면이 처음 열릴 때 한 번만 목록을 불러옴
+  // [백엔드 연동] getDocuments 내부만 실제 fetch로 바꾸면 이 코드는 수정 불필요
+  useEffect(() => {
+    getDocuments()
+      .then((data) => setDocuments(data.documents))
+      .catch((e) => {
+        setStatus("error");
+        setMessage(e.message || "문서 목록을 불러오지 못했습니다.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  // 파일을 고른 직후 실행: 검사 → 업로드 → 목록 맨 앞에 추가
   async function handleFileChange(event) {
     const input = event.target;
     const file = input.files[0];
-    if (!file) return;
+    if (!file) return; // 선택 취소
 
+    // 검사 1: PDF인지
     if (file.type !== "application/pdf") {
       setStatus("error");
       setMessage("PDF 파일만 업로드할 수 있습니다.");
       input.value = "";
       return;
     }
+    // 검사 2: 용량
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       setStatus("error");
       setMessage(`파일 용량은 ${MAX_SIZE_MB}MB 이하여야 합니다.`);
@@ -55,14 +78,17 @@ export default function Documents() {
 
     try {
       const result = await uploadDocument(file);
+      // 새 문서를 목록에 추가. 쪽수는 텍스트 추출이 끝나야 알 수 있어 null
+      // [백엔드 연동] 업로드 직후 POST /documents/{id}/process 호출(3-2) 후
+      //               GET /documents/{id}/status 로 완료를 확인(3-3)하는 단계를 여기에 추가 예정
       setDocuments((prev) => [
         {
           document_id: result.document_id,
           file_name: result.file_name,
           total_pages: null,
+          status: result.status,
           last_read_page: null,
-          question_count: 0,
-          note_count: 0,
+          last_studied_at: null,
         },
         ...prev,
       ]);
@@ -72,129 +98,133 @@ export default function Documents() {
       setStatus("error");
       setMessage(error.message || "업로드에 실패했습니다.");
     } finally {
-      input.value = "";
+      input.value = ""; // 같은 파일을 다시 고를 수 있게 초기화
     }
   }
 
+  // "이어 읽기 / 읽기" 클릭 시 문서 학습 화면(3번)으로 이동
+  // [수정 가능] 3번 화면 라우트(/documents/:id/pages/:pageNumber)는 다음 작업에서 추가됨.
+  //             그 전에는 빈 화면이 나오는 게 정상
   function handleRead(doc) {
-    // TODO: 읽기 화면 연결 (fe/reader-page 작업에서)
-    console.log("읽기 화면으로 이동:", doc.document_id, doc.last_read_page ?? 1);
+    const startPage = doc.last_read_page ?? 1;
+    navigate(`/documents/${doc.document_id}/pages/${startPage}`);
   }
 
+  const sorted = sortDocuments(documents, sortKey);
+
   return (
-    <div className="documents">
-      <h1>내 강의자료</h1>
-      <p className="documents__lead">자료를 업로드하고 학습을 이어가세요.</p>
+    <div className="library">
+      {/* [수정 가능] 화면 제목과 안내 문구 */}
+      <h1>내 학습 자료실</h1>
+      <p className="library__lead">학습할 자료를 업로드하거나, 저장된 자료를 선택해 학습을 이어가세요.</p>
 
-      {/* 업로드 카드 */}
-      <section className="card upload-card" aria-labelledby="upload-title">
-        <div className="upload-card__icon" aria-hidden="true">
-          ↑
-        </div>
-        <h2 id="upload-title">PDF 강의자료 업로드</h2>
-        <p className="upload-card__desc">
-          텍스트 추출 가능한 PDF부터 지원합니다. 페이지별로 읽을 수 있는 학습 자료를 생성합니다.
-        </p>
-
+      {/* 업로드 영역: 진짜 input은 숨기고 파란 버튼이 대신 클릭해 줌 */}
+      <div className="upload-row">
         <input
           ref={fileInputRef}
-          id="pdf-upload"
           type="file"
           accept="application/pdf"
           onChange={handleFileChange}
           className="visually-hidden"
           tabIndex={-1}
+          aria-hidden="true"
         />
         <button
           type="button"
-          className="btn btn--primary btn--upload"
+          className="upload-btn"
           onClick={() => fileInputRef.current.click()}
           disabled={status === "uploading"}
         >
-          파일 선택
+          ↑ PDF 파일 업로드
         </button>
-
-        {/* 상태 메시지: 스크린리더가 변화를 자동으로 읽어줘요 */}
-        <div
-          className={`status status--${status}`}
-          role={status === "error" ? "alert" : "status"}
-          aria-live="polite"
-        >
-          {message}
-        </div>
-      </section>
-
-      {/* 최근 학습한 자료 */}
-      <h2 className="section-title">최근 학습한 자료</h2>
-      <div className="recent">
-        <section aria-label="최근 학습한 자료 목록">
-          {documents.length === 0 ? (
-            <p>아직 업로드한 문서가 없습니다.</p>
-          ) : (
-            <ul className="doc-list">
-              {documents.map((doc) => (
-                <li key={doc.document_id} className="card doc-card">
-                  <div className="doc-card__thumb" aria-hidden="true">
-                    PDF
-                  </div>
-
-                  <div className="doc-card__body">
-                    <h3>{doc.file_name}</h3>
-                    <p className="doc-card__meta">
-                      {doc.last_read_page
-                        ? `마지막으로 읽은 페이지: ${doc.last_read_page} / ${doc.total_pages}`
-                        : `학습 기록 없음${doc.total_pages ? ` · 총 ${doc.total_pages}페이지` : ""}`}
-                    </p>
-
-                    <div className="badges">
-                      <span className="badge badge--blue">질문 {doc.question_count}개</span>
-                      <span className="badge badge--gray">필기 {doc.note_count}개</span>
-                    </div>
-
-                    <div className="doc-card__actions">
-                      <button
-                        type="button"
-                        className="btn btn--primary"
-                        onClick={() => handleRead(doc)}
-                        aria-label={`${doc.file_name} ${doc.last_read_page ?? 1}페이지부터 ${
-                          doc.last_read_page ? "이어서 학습하기" : "학습 시작하기"
-                        }`}
-                      >
-                        {doc.last_read_page ? "이어서 학습하기 →" : "학습 시작하기 →"}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn--secondary"
-                        onClick={() => navigate("/review")}
-                        aria-label={`${doc.file_name} 복습 목록`}
-                      >
-                        복습 목록
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* 다시 찾아보기 카드 */}
-        <aside className="card find-card" aria-labelledby="find-title">
-          <h3 id="find-title">다시 찾아보기</h3>
-          <p>
-            이전에 저장한 질문과 필기는
-            <br />
-            통합 복습에서 확인할 수 있습니다.
-          </p>
-          <button
-            type="button"
-            className="btn btn--outline"
-            onClick={() => navigate("/review")}
-          >
-            통합 복습 열기
-          </button>
-        </aside>
+        <p className="upload-row__hint">PDF 파일을 업로드하여 학습을 시작할 수 있습니다.</p>
       </div>
+
+      {/* 업로드 결과 안내: 문구가 바뀌면 스크린리더가 자동으로 읽어줌 (에러는 즉시 읽음) */}
+      <div
+        className={`status status--${status}`}
+        role={status === "error" ? "alert" : "status"}
+        aria-live="polite"
+      >
+        {message}
+      </div>
+
+      {/* 목록 제목 + 정렬 */}
+      <div className="list-head">
+        <h2>
+          내 학습 자료 <span className="list-head__count">(총 {documents.length}개)</span>
+        </h2>
+
+        <div className="sort">
+          <label htmlFor="sort-select" className="visually-hidden">
+            정렬 기준
+          </label>
+          <select
+            id="sort-select"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value)}
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* 문서 목록 */}
+      {loading ? (
+        <p role="status">문서 목록을 불러오는 중입니다.</p>
+      ) : sorted.length === 0 ? (
+        <p className="empty">아직 업로드한 문서가 없습니다. 위의 버튼으로 PDF를 업로드해 보세요.</p>
+      ) : (
+        <ul className="doc-list">
+          {sorted.map((doc, index) => {
+            const hasRecord = Boolean(doc.last_read_page); // 학습 기록 있는지
+            const isReady = doc.status === "completed"; // 텍스트 추출이 끝났는지
+            const startPage = doc.last_read_page ?? 1;
+
+            return (
+              // 첫 번째 문서이면서 학습 기록이 있으면 강조(시안의 파란 테두리 행)
+              <li
+                key={doc.document_id}
+                className={`doc-row${index === 0 && hasRecord ? " doc-row--highlight" : ""}`}
+              >
+                {/* PDF 아이콘 (장식이라 스크린리더는 건너뜀) */}
+                {/* [수정 가능] 아이콘 이미지 파일을 받으면 <img>로 교체 */}
+                <span className="pdf-icon" aria-hidden="true">
+                  PDF
+                </span>
+
+                <div className="doc-row__info">
+                  <h3>{doc.file_name}</h3>
+                  <p>
+                    {doc.total_pages ? `총 ${doc.total_pages}쪽` : "쪽수 확인 중"}
+                    <span aria-hidden="true"> · </span>
+                    {hasRecord ? `마지막 학습: ${doc.last_read_page}쪽` : "아직 읽지 않음"}
+                    {/* [백엔드 연동] 처리 중/실패 상태 표시 (명세서 3-3 status 값) */}
+                    {!isReady && doc.status === "uploaded" && " · 처리 대기"}
+                    {doc.status === "processing" && " · 텍스트 추출 중"}
+                    {doc.status === "failed" && " · 처리 실패"}
+                  </p>
+                </div>
+
+                {/* 스크린리더용 이름에 파일명을 포함해 버튼끼리 구분되게 함 */}
+                <button
+                  type="button"
+                  className={`read-btn${hasRecord ? " read-btn--primary" : ""}`}
+                  onClick={() => handleRead(doc)}
+                  disabled={!isReady}
+                  aria-label={`${doc.file_name} ${startPage}쪽부터 ${hasRecord ? "이어 읽기" : "읽기"}`}
+                >
+                  ▶ {startPage}쪽부터 {hasRecord ? "이어 읽기" : "읽기"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
