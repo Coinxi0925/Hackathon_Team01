@@ -1,0 +1,105 @@
+/* ============================================================
+   src/components/Layout.css
+   역할: 공통 헤더와 본문 영역의 모양 (모든 화면에 적용)
+   [수정 가능] 색상, 간격, 글자 크기는 디자인 변경 시 이 파일에서 수정
+   ============================================================ */
+
+/* 건너뛰기 링크: 평소엔 화면 밖에 숨겨두고, 키보드 포커스가 오면 왼쪽 위에 나타남 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 12px;
+  top: 12px;
+  background: #fff;
+  color: #0047d6;
+  border: 2px solid #0047d6;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  z-index: 100; /* 다른 요소 위에 보이게 */
+}
+
+/* 상단 헤더 전체 (로고 / 부제 / 오른쪽 버튼을 가로로 배치) */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 40px;
+  background: #fafcff;
+  border-bottom: 1px solid #dfe5f1;
+  flex-wrap: wrap; /* 화면이 좁으면 줄바꿈 */
+}
+
+/* 로고 + 서비스 이름 */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0a1a3a;
+  text-decoration: none;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+/* 서비스 이름 옆 부제 (왼쪽에 세로 구분선) */
+.brand__sub {
+  color: #334155;
+  font-size: 0.95rem;
+  padding-left: 20px;
+  border-left: 2px solid #cfd8ea;
+}
+
+/* 헤더 오른쪽 버튼 묶음 (margin-left: auto로 오른쪽 끝에 붙임) */
+.app-header__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 헤더의 둥근 테두리 버튼 */
+.header-btn {
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  color: #0a1a3a;
+  border: 2px solid #b8c3da;
+  border-radius: 999px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+.header-btn:hover {
+  background: #f0f4fb;
+}
+
+/* 현재 학습 방식을 보여주는 하늘색 알약 (문서 학습 화면 전용) */
+.mode-pill {
+  background: #eaf1ff;
+  color: #1a47a3;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 999px;
+}
+
+/* 본문 영역: 가운데 정렬 + 최대 폭 제한 */
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 40px 64px;
+}
+/* 건너뛰기 링크로 이동했을 때 생기는 기본 테두리 제거 (화면 이동 확인용 테두리는 불필요) */
+.app-main:focus {
+  outline: none;
+}
+
+/* 좁은 화면(모바일 등)에서는 여백을 줄임 */
+@media (max-width: 760px) {
+  .app-header {
+    padding: 14px 16px;
+  }
+  .app-main {
+    padding: 24px 16px 48px;
+  }
+}
