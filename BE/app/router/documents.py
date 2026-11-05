@@ -4,6 +4,7 @@ import re
 import json
 import statistics
 
+from typing import Literal
 from fastapi import BackgroundTasks
 from app.database import SessionLocal
 from app.supabase import storage_client, BUCKET_NAME
@@ -15,7 +16,8 @@ from fastapi import (
     UploadFile,
     File,
     Depends,
-    HTTPException
+    HTTPException,
+    Query
 )
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -857,3 +859,238 @@ def get_document_pages(
         "pages": result_pages
     }
     
+
+# 문서 내 제목 및 키워드 검색 API
+@router.get("/{document_id}/search")
+def search_document(
+    document_id: str,
+    q: str = Query(..., min_length=1, description="검색 키워드"),
+    type: Literal["all", "title", "content"] = Query(
+        "all",
+        description="검색 범위 (all, title, content)"
+    ),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # 1. 문서 존재 여부 및 소유권 확인
+    document = db.execute(
+        text("""
+            SELECT id
+            FROM documents
+            WHERE id = :document_id
+              AND user_id = :user_id
+        """),
+        {
+            "document_id": document_id,
+            "user_id": str(current_user.id)
+        }
+    ).mappings().first()
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="문서를 찾을 수 없습니다."
+        )
+
+    # 2. 검색 범위에 따른 SQL 조건 설정
+    if type == "title":
+        search_condition = """
+            p.title ILIKE :keyword
+        """
+
+    elif type == "content":
+        search_condition = """
+            (
+                p.full_text ILIKE :keyword
+                OR EXISTS (
+                    SELECT 1
+                    FROM page_blocks pb
+                    WHERE pb.page_id = p.id
+                      AND pb.content ILIKE :keyword
+                )
+            )
+        """
+
+    else:
+        search_condition = """
+            (
+                p.title ILIKE :keyword
+                OR p.full_text ILIKE :keyword
+                OR EXISTS (
+                    SELECT 1
+                    FROM page_blocks pb
+                    WHERE pb.page_id = p.id
+                      AND pb.content ILIKE :keyword
+                )
+            )
+        """
+
+    # 3. 검색 실행
+    results = db.execute(
+        text(f"""
+            SELECT
+                p.id AS page_id,
+                p.page_number,
+                p.title,
+                CASE
+                    WHEN p.title ILIKE :keyword THEN TRUE
+                    ELSE FALSE
+                END AS title_matched,
+                CASE
+                    WHEN (
+                        p.full_text ILIKE :keyword
+                        OR EXISTS (
+                            SELECT 1
+                            FROM page_blocks pb
+                            WHERE pb.page_id = p.id
+                              AND pb.content ILIKE :keyword
+                        )
+                    ) THEN TRUE
+                    ELSE FALSE
+                END AS content_matched
+            FROM pages p
+            WHERE p.document_id = :document_id
+              AND {search_condition}
+            ORDER BY p.page_number ASC
+        """),
+        {
+            "document_id": document_id,
+            "keyword": f"%{q}%",
+        }
+    ).mappings().all()
+
+    # 4. 응답 생성
+    return {
+        "document_id": document_id,
+        "keyword": q,
+        "type": type,
+        "total": len(results),
+        "results": [
+            {
+                "page_id": str(result["page_id"]),
+                "page_number": result["page_number"],
+                "title": result["title"],
+                "matched_in": [
+                    field
+                    for field, matched in [
+                        ("title", result["title_matched"]),
+                        ("content", result["content_matched"])
+                    ]
+                    if matched
+                ]
+            }
+            for result in results
+        ]
+    }
+
+
+# 특정 문서 상세 조회 API
+@router.get("/{document_id}")
+def get_document_detail(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # 문서 조회 및 소유권 확인
+    document = db.execute(
+        text("""
+            SELECT
+                id,
+                file_name,
+                total_pages,
+                status
+            FROM documents
+            WHERE id = :document_id
+              AND user_id = :user_id
+        """),
+        {
+            "document_id": document_id,
+            "user_id": str(current_user.id)
+        }
+    ).mappings().first()
+
+    # 문서가 없거나 본인 소유가 아닌 경우
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="문서를 찾을 수 없습니다."
+        )
+
+    # 응답 반환
+    return {
+        "document_id": str(document["id"]),
+        "file_name": document["file_name"],
+        "total_pages": document["total_pages"],
+        "status": document["status"]
+    }
+
+
+# 문서 내 특정 페이지 번호로 페이지 조회 API
+@router.get("/{document_id}/pages/{page_number}")
+def get_document_page(
+    document_id: str,
+    page_number: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    # 1. 문서 소유권 확인 및 페이지 조회
+    page = db.execute(
+        text("""
+            SELECT
+                p.id,
+                p.document_id,
+                p.page_number,
+                p.title
+            FROM pages p
+            JOIN documents d
+                ON p.document_id = d.id
+            WHERE d.id = :document_id
+              AND d.user_id = :user_id
+              AND p.page_number = :page_number
+        """),
+        {
+            "document_id": document_id,
+            "user_id": str(current_user.id),
+            "page_number": page_number
+        }
+    ).mappings().first()
+
+    if not page:
+        raise HTTPException(
+            status_code=404,
+            detail="페이지를 찾을 수 없습니다."
+        )
+
+    # 2. 해당 페이지의 블록 조회
+    blocks = db.execute(
+        text("""
+            SELECT
+                id,
+                block_type,
+                content,
+                block_order
+            FROM page_blocks
+            WHERE page_id = :page_id
+            ORDER BY block_order
+        """),
+        {
+            "page_id": str(page["id"])
+        }
+    ).mappings().all()
+
+    # 3. 응답 반환
+    return {
+        "page_id": str(page["id"]),
+        "document_id": str(page["document_id"]),
+        "page_number": page["page_number"],
+        "title": page["title"],
+        "blocks": [
+            {
+                "block_id": str(block["id"]),
+                "type": block["block_type"],
+                "content": block["content"],
+                "order": block["block_order"]
+            }
+            for block in blocks
+        ]
+    }
