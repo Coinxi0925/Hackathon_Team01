@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // doc: 문서 정보 / history: 질문 기록 목록 / goQuestion: 질문 화면으로 이동
-export default function QuestionList({ doc, history, goQuestion }) {
+export default function QuestionList({ doc, history, goQuestion, goSettings, goDocument }) {
   const [openIds, setOpenIds] = useState([]) // 펼쳐진 질문 id들
   const navigate = useNavigate()
 
@@ -18,7 +18,7 @@ export default function QuestionList({ doc, history, goQuestion }) {
   return (
     <div className="page qa">
       <header className="topbar">
-        <span className="logo">📖 모두의 페이지</span>
+        <span className="logo" onClick={() => navigate('/documents')}>📖 모두의 페이지</span>
         <div className="crumb">
           <span>자료실</span>
           <span>›</span>
@@ -27,7 +27,7 @@ export default function QuestionList({ doc, history, goQuestion }) {
           <span className="crumb-badge">과거 질문</span>
         </div>
         <div className="top-right">
-          <button>학습 방식 설정</button>
+          <button onClick={goSettings}>학습 방식 설정</button>
         </div>
       </header>
 
@@ -57,7 +57,7 @@ export default function QuestionList({ doc, history, goQuestion }) {
             <div className="card-head">
               <span className="badge">문서 {item.page}쪽</span>
               <h2>{item.question}</h2>
-              <button onClick={() => alert('문서 화면은 아직 준비 중입니다.')}>
+              <button onClick={() => goDocument(item.page)}>
                 ↗ 문서 {item.page}쪽으로 이동
               </button>
             </div>
