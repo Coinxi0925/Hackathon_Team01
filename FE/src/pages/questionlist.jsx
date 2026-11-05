@@ -1,8 +1,11 @@
+import './question.css'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 // doc: 문서 정보 / history: 질문 기록 목록 / goQuestion: 질문 화면으로 이동
 export default function QuestionList({ doc, history, goQuestion }) {
   const [openIds, setOpenIds] = useState([]) // 펼쳐진 질문 id들
+  const navigate = useNavigate()
 
   function toggle(id) {
     if (openIds.includes(id)) {
@@ -13,7 +16,7 @@ export default function QuestionList({ doc, history, goQuestion }) {
   }
 
   return (
-    <div className="page">
+    <div className="page qa">
       <header className="topbar">
         <span className="logo">📖 모두의 페이지</span>
         <div className="crumb">
@@ -30,7 +33,7 @@ export default function QuestionList({ doc, history, goQuestion }) {
 
       {/* ---------- 돌아가기 링크 ---------- */}
       <div className="back-link">
-        <button onClick={() => alert('문서 화면은 아직 준비 중입니다.')}>‹ 모두의 페이지로 돌아가기</button>
+        <button onClick={() => navigate('/documents')}>‹ 모두의 페이지로 돌아가기</button>
       </div>
 
       {/* ---------- 제목 줄 ---------- */}
@@ -63,7 +66,7 @@ export default function QuestionList({ doc, history, goQuestion }) {
             {open && <p className="answer-line"><b>답변:</b> {item.answer}</p>}
 
             <button className="toggle-btn" onClick={() => toggle(item.id)}>
-              {open ? '△ 답변 접기' : '▽ 답변 펼치기'}
+              {open ? '∧ 답변 접기' : '∨ 답변 펼치기'}
             </button>
           </div>
         )

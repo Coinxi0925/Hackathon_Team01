@@ -1,3 +1,4 @@
+import './question.css'
 import { useState } from 'react'
 import { askQuestion } from '../api/api.js'
 
@@ -25,7 +26,7 @@ export default function QuestionPage({ doc, addHistory, goHistory }) {
   }
 
   return (
-    <div className="page">
+    <div className="page qa">
       {/* ---------- 맨 위 바: 로고 / 경로 / 설정 버튼 ---------- */}
       <header className="topbar">
         <span className="logo">📖 모두의 페이지</span>
