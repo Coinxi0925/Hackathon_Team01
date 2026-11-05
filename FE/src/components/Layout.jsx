@@ -6,6 +6,7 @@
 // ============================================================
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import "./Layout.css";
+import Logo from "./Logo";
 
 // [수정 가능] 모드 값(명세서 3-4의 interface_type) → 화면에 보일 이름
 const MODE_LABELS = {
@@ -43,11 +44,7 @@ export default function Layout() {
 
       <header className="app-header">
         {/* 로고 + 서비스 이름. 클릭하면 자료실로 이동 */}
-        {/* [수정 가능] 로고 이미지(SVG)를 받으면 📖 이모지를 <img>로 교체 */}
-        <Link to="/documents" className="brand">
-          <span aria-hidden="true">📖</span>
-          <span className="brand__name">모두의 페이지</span>
-        </Link>
+        <Logo to="/documents" className="brand" />
 
         {/* [수정 가능] 헤더 부제 문구 */}
         <span className="brand__sub">
