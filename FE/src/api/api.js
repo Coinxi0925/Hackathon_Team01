@@ -26,7 +26,9 @@ export async function askQuestion({ docId, page, question }) {
 
   // 질문을 '저장된 질문'에 등록해서 과거 질문 목록에 나오게 함
   try {
-    await client.post(`/questions/${questionId}/save`)
+    await client.post(`/questions/${questionId}/save`, {
+      page_id: pageId,
+    })
   } catch (e) {
     console.error('질문 저장 실패:', e.response?.status, e.response?.data)
   }
