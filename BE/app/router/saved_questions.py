@@ -1,17 +1,3 @@
-# BE/app/router/saved_questions.py
-# 질문/답변 저장 및 과거 질문 검색 — B 담당 (명세서 8, 9)
-#   POST   /questions/{question_id}/save
-#   GET    /saved-questions
-#   GET    /saved-questions/search?q=...&document_id=...
-#   DELETE /saved-questions/{saved_id}
-#
-# 사용하는 테이블 (A가 만든 ERD 기준)
-#   questions       : id, user_id, page_id, question, answer, answer_mode, sources, created_at
-#   saved_questions : id, user_id, question_id, page_id, block_id, created_at
-#   pages           : id, document_id, page_number ...
-#   page_blocks     : id, page_id, bbox ...
-#   documents       : id, user_id, file_name ...
-
 from typing import Optional
 from uuid import UUID
 

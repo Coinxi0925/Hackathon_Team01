@@ -1,8 +1,3 @@
-# BE/app/router/users.py
-# 사용자 인터페이스(학습 방식) 설정 — B 담당
-#   GET   /users/me/interface   내 설정 조회  (A 요청으로 추가)
-#   PATCH /users/me/interface   내 설정 저장  (명세서 3-4)
-
 from typing import Literal
 
 from fastapi import APIRouter, Depends
