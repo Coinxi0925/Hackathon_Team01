@@ -1,12 +1,34 @@
 import './question.css'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Logo from "../components/Logo";
+import { getSavedQuestions } from '../api/api';
 
 // doc: 문서 정보 / history: 질문 기록 목록 / goQuestion: 질문 화면으로 이동
-export default function QuestionList({ doc, history, goQuestion, goSettings, goDocument }) {
+export default function QuestionList({doc = { name: '문서' }, goQuestion, goSettings, goDocument }) {
+  const [history, setHistory] = useState([]) // 과거 질문 목록 상태
+  const [loading, setLoading] = useState(true) // 로딩 상태
   const [openIds, setOpenIds] = useState([]) // 펼쳐진 질문 id들
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true)
+        const data = await getSavedQuestions()
+
+        const questionList = Array.isArray(data) ? data : (data.items || [])
+        setHistory(questionList)
+      
+      } catch (err) {
+        console.error('과거 질문 목록을 불러오는 중 에러 발생:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchQuestions()
+  }, [])
 
   function toggle(id) {
     if (openIds.includes(id)) {
