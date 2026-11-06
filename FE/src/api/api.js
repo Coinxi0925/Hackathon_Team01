@@ -52,3 +52,33 @@ export async function registerUser({ email, password }) {
   console.log('회원가입 응답:', res.data)
   return res.data
 }
+
+// 문서 상세 정보 가져오기
+export async function getDocument(docId) {
+  const res = await client.get(`/documents/${docId}`)
+  console.log('문서 상세 응답:', res.data)
+  return res.data
+}
+
+// 문서의 페이지 목록 가져오기
+export async function getDocumentPages(docId) {
+  const res = await client.get(`/documents/${docId}/pages`)
+  console.log('문서 페이지 응답:', res.data)
+  return res.data
+}
+
+// 문서 처리 상태 가져오기
+export async function getDocumentStatus(docId) {
+  const res = await client.get(`/documents/${docId}/status`)
+  console.log('문서 상태 응답:', res.data)
+  return res.data
+}
+
+// 특정 페이지 가져오기
+export async function getDocumentPage(docId, pageNumber) {
+  const res = await client.get(
+    `/documents/${docId}/pages/${pageNumber}`
+  )
+  console.log('문서 페이지 응답:', res.data)
+  return res.data
+}

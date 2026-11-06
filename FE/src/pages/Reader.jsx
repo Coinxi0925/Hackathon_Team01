@@ -7,6 +7,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { getDocument } from "../api/documents";
 import { getDocumentPages } from "../api/pages";
 import "./Reader.css";
 
@@ -16,6 +17,7 @@ export default function Reader({ onAsk, onHistory }) {
   const current = Number(pageNumber) || 1;
 
   const [doc, setDoc] = useState(null); // 문서 전체 데이터
+  const [documentInfo, setDocumentInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [jumpValue, setJumpValue] = useState(String(current)); // 쪽 번호 입력칸 값
@@ -24,12 +26,20 @@ export default function Reader({ onAsk, onHistory }) {
 
   // 화면이 열릴 때 문서 데이터를 한 번 불러옴
   // [백엔드 연동] getDocumentPages 내부만 바꾸면 수정 불필요
-  useEffect(() => {
-    getDocumentPages(id)
-      .then(setDoc)
-      .catch((e) => setError(e.message || "문서를 불러오지 못했습니다."))
-      .finally(() => setLoading(false));
-  }, [id]);
+ useEffect(() => {
+  Promise.all([
+    getDocumentPages(id),
+    getDocument(id),
+  ])
+    .then(([pagesData, documentData]) => {
+      setDoc(pagesData);
+      setDocumentInfo(documentData);
+    })
+    .catch((e) => {
+      setError(e.message || "문서를 불러오지 못했습니다.");
+    })
+    .finally(() => setLoading(false));
+}, [id]);
 
   // 쪽이 바뀔 때: 입력칸 갱신 + 제목으로 포커스 이동 + 안내 문구
   // (스크린리더 사용자가 새 쪽의 제목부터 바로 듣도록 하는 접근성 핵심)
@@ -80,7 +90,7 @@ export default function Reader({ onAsk, onHistory }) {
           <div className="doc-title">
             <span className="pdf-badge" aria-hidden="true">PDF</span>
             <div>
-              <p id="doc-title" className="doc-title__name">{doc.file_name}</p>
+              <p id="doc-title" className="doc-title__name">{documentInfo?.file_name}</p>
               <p className="doc-title__sub">문서 {current} / {total}쪽</p>
             </div>
           </div>
@@ -173,7 +183,7 @@ export default function Reader({ onAsk, onHistory }) {
   onClick={() =>
     onAsk({
       id: id,
-      name: doc.file_name,
+      name: documentInfo?.file_name,
       topic: page?.title || "",
       page: current,
     })
@@ -190,7 +200,7 @@ export default function Reader({ onAsk, onHistory }) {
   onClick={() =>
     onHistory({
       id: id,
-      name: doc.file_name,
+      name: documentInfo?.file_name,
       topic: page?.title || "",
       page: current,
     })
