@@ -1,74 +1,153 @@
+
 // ============================================================
-// src/pages/Documents.jsx  (화면 2: 내 학습 자료실)
-// 역할: PDF 업로드 + 내 문서 목록 표시 + 정렬 + "이어 읽기/읽기" 버튼
-// 사용 API: getDocuments(5-1), uploadDocument(3-1)  → src/api/documents.js
+// src/pages/Documents.jsx
+// 역할: PDF 업로드 + 내 문서 목록 표시 + 정렬 + 읽기 버튼
+// 사용 API:
+// getDocuments
+// uploadDocument
+// processDocument
+// getDocumentStatus
 // ============================================================
+
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDocuments, uploadDocument } from "../api/documents";
+
+import {
+  getDocuments,
+  uploadDocument,
+  processDocument,
+  getDocumentStatus,
+} from "../api/documents";
+
 import "./Documents.css";
 
-// [수정 가능] 업로드 용량 제한(MB). [백엔드 연동] 백엔드의 실제 최대 용량을 확인해서 맞추기
+// 업로드 용량 제한
 const MAX_SIZE_MB = 20;
 
-// [수정 가능] 정렬 옵션 (value는 아래 sortDocuments 함수와 연결)
+// PDF 처리 상태 조회 간격 및 최대 횟수
+const POLLING_INTERVAL = 1500;
+const MAX_ATTEMPTS = 120;
+
+// 정렬 옵션
 const SORT_OPTIONS = [
   { value: "recent", label: "최근 학습순" },
   { value: "name", label: "이름순" },
 ];
 
-// 선택한 기준으로 목록을 정렬해서 돌려줌 (원본 배열은 건드리지 않음)
+// 문서 정렬
 function sortDocuments(list, sortKey) {
   const copied = [...list];
+
   if (sortKey === "name") {
-    return copied.sort((a, b) => a.file_name.localeCompare(b.file_name, "ko"));
+    return copied.sort((a, b) =>
+      a.file_name.localeCompare(b.file_name, "ko")
+    );
   }
-  // recent: 최근에 학습한 문서가 위로, 학습 기록 없는 문서는 아래로
+
   return copied.sort((a, b) => {
-    const timeA = a.last_studied_at ? new Date(a.last_studied_at).getTime() : 0;
-    const timeB = b.last_studied_at ? new Date(b.last_studied_at).getTime() : 0;
+    const timeA = a.last_studied_at
+      ? new Date(a.last_studied_at).getTime()
+      : 0;
+
+    const timeB = b.last_studied_at
+      ? new Date(b.last_studied_at).getTime()
+      : 0;
+
     return timeB - timeA;
   });
 }
 
 export default function Documents() {
-  const [documents, setDocuments] = useState([]); // 문서 목록
-  const [loading, setLoading] = useState(true); // 목록 불러오는 중인지
-  const [sortKey, setSortKey] = useState("recent"); // 현재 정렬 기준
-  const [status, setStatus] = useState("idle"); // 업로드 상태: idle | uploading | success | error
-  const [message, setMessage] = useState(""); // 업로드 결과 안내 문구
-  const fileInputRef = useRef(null); // 숨겨진 파일 입력칸을 가리키는 도구
+  const [documents, setDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState("recent");
+
+  const [status, setStatus] = useState("idle");
+  const [message, setMessage] = useState("");
+
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  // 화면이 처음 열릴 때 한 번만 목록을 불러옴
-  // [백엔드 연동] getDocuments 내부만 실제 fetch로 바꾸면 이 코드는 수정 불필요
+  // ============================================================
+  // 1. 처음 화면이 열릴 때 문서 목록 조회
+  // ============================================================
+
   useEffect(() => {
     getDocuments()
-      .then((data) => setDocuments(data.documents))
-      .catch((e) => {
-        setStatus("error");
-        setMessage(e.message || "문서 목록을 불러오지 못했습니다.");
+      .then((data) => {
+        setDocuments(data.documents || []);
       })
-      .finally(() => setLoading(false));
+      .catch((error) => {
+        console.error("문서 목록 조회 오류:", error);
+
+        setStatus("error");
+        setMessage("문서 목록을 불러오지 못했습니다.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  // 파일을 고른 직후 실행: 검사 → 업로드 → 목록 맨 앞에 추가
+  // ============================================================
+  // 2. PDF 처리 완료 여부를 반복 조회
+  // ============================================================
+
+  async function waitForDocumentComplete(documentId) {
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+      const result = await getDocumentStatus(documentId);
+
+      console.log(
+        `[PDF 처리 상태] ${i + 1}/${MAX_ATTEMPTS}`,
+        result
+      );
+
+      // PDF 처리 완료
+      if (result.status === "completed") {
+        return result;
+      }
+
+      // PDF 처리 실패
+      if (result.status === "failed") {
+        throw new Error("PDF 텍스트 추출에 실패했습니다.");
+      }
+
+      // 아직 처리 중이면 대기
+      await new Promise((resolve) =>
+        setTimeout(resolve, POLLING_INTERVAL)
+      );
+    }
+
+    throw new Error(
+      "PDF 처리 시간이 초과되었습니다. 잠시 후 다시 확인해 주세요."
+    );
+  }
+
+  // ============================================================
+  // 3. PDF 업로드 및 텍스트 추출
+  // ============================================================
+
   async function handleFileChange(event) {
     const input = event.target;
     const file = input.files[0];
-    if (!file) return; // 선택 취소
 
-    // 검사 1: PDF인지
+    if (!file) return;
+
+    // PDF 파일 형식 검사
     if (file.type !== "application/pdf") {
       setStatus("error");
       setMessage("PDF 파일만 업로드할 수 있습니다.");
+
       input.value = "";
       return;
     }
-    // 검사 2: 용량
+
+    // 파일 용량 검사
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
       setStatus("error");
-      setMessage(`파일 용량은 ${MAX_SIZE_MB}MB 이하여야 합니다.`);
+      setMessage(
+        `파일 용량은 ${MAX_SIZE_MB}MB 이하여야 합니다.`
+      );
+
       input.value = "";
       return;
     }
@@ -76,50 +155,154 @@ export default function Documents() {
     setStatus("uploading");
     setMessage(`${file.name} 업로드 중입니다.`);
 
+    // catch에서도 사용할 수 있도록 try 바깥에 선언
+    let uploadedDocumentId = null;
+
     try {
-      const result = await uploadDocument(file);
-      // 새 문서를 목록에 추가. 쪽수는 텍스트 추출이 끝나야 알 수 있어 null
-      // [백엔드 연동] 업로드 직후 POST /documents/{id}/process 호출(3-2) 후
-      //               GET /documents/{id}/status 로 완료를 확인(3-3)하는 단계를 여기에 추가 예정
+      // --------------------------------------------------------
+      // ① PDF 업로드
+      // POST /documents
+      // --------------------------------------------------------
+
+      const uploadResult = await uploadDocument(file);
+
+      uploadedDocumentId = uploadResult.document_id;
+
+      console.log("PDF 업로드 성공:", uploadResult);
+
+      // --------------------------------------------------------
+      // ② 문서 목록에 우선 processing 상태로 추가
+      // --------------------------------------------------------
+
+      const newDocument = {
+        document_id: uploadedDocumentId,
+        file_name: uploadResult.file_name || file.name,
+        total_pages: null,
+        status: "processing",
+        last_read_page: null,
+        last_block_id: null,
+        last_studied_at: null,
+      };
+
       setDocuments((prev) => [
-        {
-          document_id: result.document_id,
-          file_name: result.file_name,
-          total_pages: null,
-          status: result.status,
-          last_read_page: null,
-          last_studied_at: null,
-        },
-        ...prev,
+        newDocument,
+        ...prev.filter(
+          (doc) => doc.document_id !== uploadedDocumentId
+        ),
       ]);
+
+      setMessage(
+        `${file.name} 업로드 완료! 텍스트를 추출하고 있습니다.`
+      );
+
+      // --------------------------------------------------------
+      // ③ PDF 텍스트 추출 시작
+      // POST /documents/{document_id}/process
+      // --------------------------------------------------------
+
+      const processResult = await processDocument(
+        uploadedDocumentId
+      );
+
+      console.log("PDF 처리 요청 성공:", processResult);
+
+      // --------------------------------------------------------
+      // ④ 처리 완료 여부 반복 조회
+      // GET /documents/{document_id}/status
+      // --------------------------------------------------------
+
+      const completedResult =
+        await waitForDocumentComplete(uploadedDocumentId);
+
+      console.log("PDF 텍스트 추출 완료:", completedResult);
+
+      // --------------------------------------------------------
+      // ⑤ 문서 목록의 상태를 completed로 변경
+      // --------------------------------------------------------
+
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.document_id === uploadedDocumentId
+            ? {
+                ...doc,
+                status: completedResult.status,
+                total_pages: completedResult.total_pages,
+              }
+            : doc
+        )
+      );
+
       setStatus("success");
-      setMessage(`${file.name} 업로드가 완료되었습니다.`);
+      setMessage(
+        `${file.name} 텍스트 추출이 완료되었습니다. 학습을 시작할 수 있습니다.`
+      );
+
     } catch (error) {
+      console.error("PDF 업로드 및 처리 오류:", error);
+
+      // 처리 실패 시 해당 문서 상태 변경
+      if (uploadedDocumentId) {
+        setDocuments((prev) =>
+          prev.map((doc) =>
+            doc.document_id === uploadedDocumentId
+              ? {
+                  ...doc,
+                  status: "failed",
+                }
+              : doc
+          )
+        );
+      }
+
       setStatus("error");
-      setMessage(error.message || "업로드에 실패했습니다.");
+      setMessage(
+        error.response?.data?.detail ||
+        error.message ||
+        "PDF 업로드 및 처리에 실패했습니다."
+      );
+
     } finally {
-      input.value = ""; // 같은 파일을 다시 고를 수 있게 초기화
+      // 같은 파일을 다시 선택할 수 있도록 초기화
+      input.value = "";
     }
   }
 
-  // "이어 읽기 / 읽기" 클릭 시 문서 학습 화면(3번)으로 이동
-  // [수정 가능] 3번 화면 라우트(/documents/:id/pages/:pageNumber)는 다음 작업에서 추가됨.
-  //             그 전에는 빈 화면이 나오는 게 정상
+  // ============================================================
+  // 4. 읽기 버튼 클릭 시 학습 화면으로 이동
+  // ============================================================
+
   function handleRead(doc) {
     const startPage = doc.last_read_page ?? 1;
-    navigate(`/documents/${doc.document_id}/pages/${startPage}`);
+
+    navigate(
+      `/documents/${doc.document_id}/pages/${startPage}`
+    );
   }
+
+  // ============================================================
+  // 5. 문서 정렬
+  // ============================================================
 
   const sorted = sortDocuments(documents, sortKey);
 
+  // ============================================================
+  // 6. 화면 렌더링
+  // ============================================================
+
   return (
     <div className="library">
-      {/* [수정 가능] 화면 제목과 안내 문구 */}
-      <h1>내 학습 자료실</h1>
-      <p className="library__lead">학습할 자료를 업로드하거나, 저장된 자료를 선택해 학습을 이어가세요.</p>
 
-      {/* 업로드 영역: 진짜 input은 숨기고 파란 버튼이 대신 클릭해 줌 */}
+      {/* 화면 제목 */}
+      <h1>내 학습 자료실</h1>
+
+      <p className="library__lead">
+        학습할 자료를 업로드하거나, 저장된 자료를 선택해
+        학습을 이어가세요.
+      </p>
+
+      {/* PDF 업로드 영역 */}
       <div className="upload-row">
+
         <input
           ref={fileInputRef}
           type="file"
@@ -129,6 +312,7 @@ export default function Documents() {
           tabIndex={-1}
           aria-hidden="true"
         />
+
         <button
           type="button"
           className="upload-btn"
@@ -137,10 +321,14 @@ export default function Documents() {
         >
           ↑ PDF 파일 업로드
         </button>
-        <p className="upload-row__hint">PDF 파일을 업로드하여 학습을 시작할 수 있습니다.</p>
+
+        <p className="upload-row__hint">
+          PDF 파일을 업로드하여 학습을 시작할 수 있습니다.
+        </p>
+
       </div>
 
-      {/* 업로드 결과 안내: 문구가 바뀌면 스크린리더가 자동으로 읽어줌 (에러는 즉시 읽음) */}
+      {/* 업로드 및 처리 결과 안내 */}
       <div
         className={`status status--${status}`}
         role={status === "error" ? "alert" : "status"}
@@ -149,82 +337,145 @@ export default function Documents() {
         {message}
       </div>
 
-      {/* 목록 제목 + 정렬 */}
+      {/* 문서 목록 제목 및 정렬 */}
       <div className="list-head">
+
         <h2>
-          내 학습 자료 <span className="list-head__count">(총 {documents.length}개)</span>
+          내 학습 자료{" "}
+          <span className="list-head__count">
+            (총 {documents.length}개)
+          </span>
         </h2>
 
         <div className="sort">
-          <label htmlFor="sort-select" className="visually-hidden">
+
+          <label
+            htmlFor="sort-select"
+            className="visually-hidden"
+          >
             정렬 기준
           </label>
+
           <select
             id="sort-select"
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value)}
           >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
+            {SORT_OPTIONS.map((option) => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
               </option>
             ))}
           </select>
+
         </div>
       </div>
 
       {/* 문서 목록 */}
       {loading ? (
-        <p role="status">문서 목록을 불러오는 중입니다.</p>
+
+        <p role="status">
+          문서 목록을 불러오는 중입니다.
+        </p>
+
       ) : sorted.length === 0 ? (
-        <p className="empty">아직 업로드한 문서가 없습니다. 위의 버튼으로 PDF를 업로드해 보세요.</p>
+
+        <p className="empty">
+          아직 업로드한 문서가 없습니다.
+          위의 버튼으로 PDF를 업로드해 보세요.
+        </p>
+
       ) : (
+
         <ul className="doc-list">
+
           {sorted.map((doc, index) => {
-            const hasRecord = Boolean(doc.last_read_page); // 학습 기록 있는지
-            const isReady = doc.status === "completed"; // 텍스트 추출이 끝났는지
+
+            const hasRecord = Boolean(doc.last_read_page);
+
+            const isReady = doc.status === "completed";
+
             const startPage = doc.last_read_page ?? 1;
 
             return (
-              // 첫 번째 문서이면서 학습 기록이 있으면 강조(시안의 파란 테두리 행)
+
               <li
                 key={doc.document_id}
-                className={`doc-row${index === 0 && hasRecord ? " doc-row--highlight" : ""}`}
+                className={`doc-row${
+                  index === 0 && hasRecord
+                    ? " doc-row--highlight"
+                    : ""
+                }`}
               >
-                {/* PDF 아이콘 (장식이라 스크린리더는 건너뜀) */}
-                {/* [수정 가능] 아이콘 이미지 파일을 받으면 <img>로 교체 */}
-                <span className="pdf-icon" aria-hidden="true">
+
+                {/* PDF 아이콘 */}
+                <span
+                  className="pdf-icon"
+                  aria-hidden="true"
+                >
                   PDF
                 </span>
 
+                {/* 문서 정보 */}
                 <div className="doc-row__info">
+
                   <h3>{doc.file_name}</h3>
+
                   <p>
-                    {doc.total_pages ? `총 ${doc.total_pages}쪽` : "쪽수 확인 중"}
+                    {doc.total_pages
+                      ? `총 ${doc.total_pages}쪽`
+                      : "쪽수 확인 중"}
+
                     <span aria-hidden="true"> · </span>
-                    {hasRecord ? `마지막 학습: ${doc.last_read_page}쪽` : "아직 읽지 않음"}
-                    {/* [백엔드 연동] 처리 중/실패 상태 표시 (명세서 3-3 status 값) */}
-                    {!isReady && doc.status === "uploaded" && " · 처리 대기"}
-                    {doc.status === "processing" && " · 텍스트 추출 중"}
-                    {doc.status === "failed" && " · 처리 실패"}
+
+                    {hasRecord
+                      ? `마지막 학습: ${doc.last_read_page}쪽`
+                      : "아직 읽지 않음"}
+
+                    {doc.status === "uploaded" &&
+                      " · 처리 대기"}
+
+                    {doc.status === "processing" &&
+                      " · 텍스트 추출 중"}
+
+                    {doc.status === "failed" &&
+                      " · 처리 실패"}
+
                   </p>
+
                 </div>
 
-                {/* 스크린리더용 이름에 파일명을 포함해 버튼끼리 구분되게 함 */}
+                {/* 읽기 버튼 */}
                 <button
                   type="button"
-                  className={`read-btn${hasRecord ? " read-btn--primary" : ""}`}
+                  className={`read-btn${
+                    hasRecord
+                      ? " read-btn--primary"
+                      : ""
+                  }`}
                   onClick={() => handleRead(doc)}
                   disabled={!isReady}
-                  aria-label={`${doc.file_name} ${startPage}쪽부터 ${hasRecord ? "이어 읽기" : "읽기"}`}
+                  aria-label={`${doc.file_name} ${startPage}쪽부터 ${
+                    hasRecord ? "이어 읽기" : "읽기"
+                  }`}
                 >
-                  ▶ {startPage}쪽부터 {hasRecord ? "이어 읽기" : "읽기"}
+                  ▶ {startPage}쪽부터{" "}
+                  {hasRecord ? "이어 읽기" : "읽기"}
                 </button>
+
               </li>
+
             );
+
           })}
+
         </ul>
+
       )}
+
     </div>
   );
 }
