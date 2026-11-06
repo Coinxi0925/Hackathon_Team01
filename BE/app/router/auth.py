@@ -19,7 +19,6 @@ security = HTTPBearer(auto_error=False)
 class SignupRequest(BaseModel):
     email: str
     password: str = Field(..., min_length=6, description="6자 이상")
-    name: str = Field(..., min_length=1)
 
 
 class LoginRequest(BaseModel):
@@ -30,12 +29,10 @@ class LoginRequest(BaseModel):
 # ───────────────────────── 공통 함수 ─────────────────────────
 
 def to_user_response(user) -> dict:
-    """Supabase 사용자 → 명세서의 user 모양 {id, email, name}"""
-    metadata = user.user_metadata or {}
+    """Supabase 사용자 → {id, email}"""
     return {
         "id": str(user.id),
         "email": user.email,
-        "name": metadata.get("name"),
     }
 
 
@@ -86,8 +83,6 @@ def signup(request: SignupRequest):
         response = auth_client.auth.sign_up({
             "email": request.email,
             "password": request.password,
-            # 이름은 Supabase 사용자 정보(user_metadata)에 같이 저장 → 별도 users 테이블 불필요
-            "options": {"data": {"name": request.name}},
         })
     except AuthApiError as exc:
         message = str(exc)
