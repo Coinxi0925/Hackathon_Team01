@@ -1,8 +1,8 @@
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Signup.css'
 import Logo from "../components/Logo";
+import { registerUser } from '../api/api';
 
 export default function Signup() {
   const navigate = useNavigate()
@@ -13,7 +13,7 @@ export default function Signup() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     setError('')
@@ -34,9 +34,19 @@ export default function Signup() {
       return
     }
 
-    // 현재는 프론트엔드 입력값 검증만 진행합니다.
-    // 실제 회원가입은 백엔드 API 연동 후 가능합니다.
-    setMessage('입력값 확인이 완료되었습니다. 실제 회원가입은 백엔드 연동 후 이용할 수 있습니다.')
+    try {
+      await registerUser({ email, password })
+      setMessage('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.')
+      setTimeout(() => {
+        navigate('/')
+      }, 1500)
+
+    } catch (err) {
+      console.error('회원가입 에러:', err)
+      // 백엔드에서 보내준 에러 메시지가 있다면 보여주고, 없으면 기본 메시지 출력
+      const errorMsg = err.response?.data?.detail || '회원가입에 실패했습니다. 다시 시도해 주세요.'
+      setError(errorMsg)
+    }
   }
 
   return (

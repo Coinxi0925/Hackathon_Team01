@@ -17,12 +17,18 @@ export default function QuestionPage({ doc, addHistory, goHistory, goSettings, g
     setStatus('답변을 생성하는 중입니다.')
 
     try {
-      const answerText = await askQuestion({ docId: doc.id, page: doc.page, question })
-      setAnswer(answerText)
-      addHistory({ id: Date.now(), page: doc.page, question, answer: answerText })
+      const result = await askQuestion({ docId: doc.id, page: doc.page, question })
+      setAnswer(result.answer)
+      addHistory({
+        id: result.id ?? Date.now(),
+        page: doc.page,
+        question,
+        answer: result.answer,
+      })
       setStatus('✓ 답변 생성 완료 · 기록 저장 완료')
-    } catch {
-      setStatus('답변 생성에 실패했습니다. 다시 시도해 주세요.')
+    } catch (err) {
+      const msg = err.response?.data?.detail
+      setStatus(typeof msg === 'string' ? msg : '답변 생성에 실패했습니다. 다시 시도해 주세요.')
     }
   }
 
@@ -30,7 +36,7 @@ export default function QuestionPage({ doc, addHistory, goHistory, goSettings, g
     <div className="page qa">
       {/* ---------- 맨 위 바: 로고 / 경로 / 설정 버튼 ---------- */}
       <header className="topbar">
-        <Logo onClick={() => goDocument()} className="logo" />
+        <Logo to="/documents" className="logo" />
         <div className="crumb">
           <span>자료실</span>
           <span>›</span>

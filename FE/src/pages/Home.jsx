@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import heroImg from '../assets/pageofall.png'
 import './Home.css'
 import Logo from "../components/Logo";
+import client from '../api/client'
 
 // 주요 기능 카드 4개
 const FEATURES = [
@@ -18,9 +19,9 @@ export default function Home() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  // [로그인] 버튼을 눌렀을 때
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (email.trim() === '') {
@@ -31,11 +32,24 @@ export default function Home() {
       setError('비밀번호를 입력해 주세요.')
       return
     }
-    setError('')
 
-    // [백엔드 연동] 나중에 여기서 로그인 API를 호출하세요.
-    // 지금은 검사만 통과하면 자료실로 이동합니다.
-    navigate('/documents')
+    setError('')
+    setLoading(true)
+
+    try {
+      const res = await client.post('/auth/login', { email, password })
+
+      // 로그인 성공: 토큰을 저장하고 자료실로 이동
+      localStorage.setItem('token', res.data.access_token)
+      localStorage.setItem('refresh_token', res.data.refresh_token)
+      navigate('/documents')
+    } catch (err) {
+      // 실패: 백엔드가 준 한글 메시지를 그대로 보여줌
+      const msg = err.response?.data?.detail
+      setError(typeof msg === 'string' ? msg : '로그인에 실패했습니다. 다시 시도해 주세요.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -46,7 +60,6 @@ export default function Home() {
           <button type="button" className="home-btn-outline" onClick={() => navigate('/')}>
             로그인
           </button>
-          {/* 회원가입 화면은 팀원 담당: 주소가 다르면 '/Signup'만 바꾸세요 */}
           <button type="button" className="home-btn-fill" onClick={() => navigate('/Signup')}>
             회원가입
           </button>
@@ -122,7 +135,9 @@ export default function Home() {
 
             {error !== '' && <p className="home-error" role="alert">{error}</p>}
 
-            <button type="submit" className="home-submit">로그인</button>
+            <button type="submit" className="home-submit" disabled={loading}>
+            {loading ? '로그인 중...' : '로그인'}
+            </button>
           </form>
         </aside>
       </div>

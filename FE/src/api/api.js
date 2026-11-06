@@ -1,19 +1,51 @@
-// 질문을 보내고 답변을 받는 함수
-// 지금은 가짜 답변. 백엔드가 완성되면 이 함수 안만 fetch로 바꾸면 됨 
+import client from './client'
+
+// 문서의 특정 쪽 정보를 가져와서 page_id를 찾아요
+async function getPageId(docId, pageNumber) {
+  const res = await client.get(`/documents/${docId}/pages/${pageNumber}`)
+
+  // 확인용: 응답 모양을 콘솔에 찍어요 (확인 후 지워도 돼요)
+  console.log('쪽 정보 응답:', res.data)
+
+  // 응답에 id 또는 page_id가 들어 있다고 가정
+  return res.data.id ?? res.data.page_id
+}
+
+// 질문 보내고 답변 받기
 export async function askQuestion({ docId, page, question }) {
-  await new Promise((resolve) => setTimeout(resolve, 800)) // 0.8초 기다리는 척
+  const pageId = await getPageId(docId, page)
 
-  return (
-    '촉진 확산과 능동 수송은 에너지 사용 여부와 이동하는 물질의 방향이 다릅니다. 촉진 확산은 농도 기울기를 따라 에너지를 사용하지 않고 이동하며, 능동 수송은 에너지를 사용해 농도 기울기를 거슬러 이동할 수 있습니다.\n' +
-    'AI 답변은 오류가 있을 수 있습니다.'
-  )
+  const res = await client.post(`/pages/${pageId}/questions`, {
+    question,
+    answer_mode: 'normal',
+  })
 
-  // 백엔드 연결 때 위를 지우고 이렇게 바꿈 (주소는 백엔드 팀원에게 확인)
-  // const res = await fetch('http://백엔드주소/api/questions', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ docId, page, question }),
-  // })
-  // const data = await res.json()
-  // return data.answer
+  // 확인용: 응답 모양을 콘솔에 찍어요 (확인 후 지워도 돼요)
+  console.log('질문 응답:', res.data)
+
+  // 응답의 어느 칸이 답변인지 모를 때를 대비해 여러 이름을 시도해요
+  const data = res.data
+  const answer =
+    typeof data === 'string'
+      ? data
+      : data.answer ?? data.answer_text ?? data.response ?? data.content
+
+  return { id: data.id, answer }
+}
+
+// 저장된 질문 목록 가져오기
+export async function getSavedQuestions() {
+  const res = await client.get('/saved-questions')
+  console.log('저장된 질문 응답:', res.data)
+  return res.data
+}
+
+// 회원가입 요청 함수
+export async function registerUser({ email, password }) {
+  const res = await client.post('/auth/signup', {
+    email,
+    password,
+  })
+  console.log('회원가입 응답:', res.data)
+  return res.data
 }
