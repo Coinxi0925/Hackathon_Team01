@@ -3,6 +3,7 @@ import pymupdf
 import re
 import json
 import statistics
+import traceback
 
 from pydantic import BaseModel, Field
 from typing import Literal
@@ -71,7 +72,58 @@ def get_current_user(
             status_code=401,
             detail="유효하지 않은 인증 토큰입니다."
         )
+# 내 문서 목록 조회 API
 
+@router.get("")
+def get_documents(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    documents = db.execute(
+        text("""
+            SELECT
+                id,
+                file_name,
+                total_pages,
+                status,
+                last_read_page,
+                last_block_id,
+                last_studied_at,
+                created_at
+            FROM documents
+            WHERE user_id = :user_id
+            ORDER BY created_at DESC
+        """),
+        {
+            "user_id": str(current_user.id)
+        }
+    ).mappings().all()
+
+    return {
+        "documents": [
+            {
+                "document_id": str(doc["id"]),
+                "file_name": doc["file_name"],
+                "total_pages": doc["total_pages"],
+                "status": doc["status"],
+                "last_read_page": doc["last_read_page"],
+                "last_block_id": (
+                    str(doc["last_block_id"])
+                    if doc["last_block_id"] else None
+                ),
+                "last_studied_at": (
+                    doc["last_studied_at"].isoformat()
+                    if doc["last_studied_at"] else None
+                ),
+                "created_at": (
+                    doc["created_at"].isoformat()
+                    if doc["created_at"] else None
+                )
+            }
+            for doc in documents
+        ]
+    }
+    
 # PDF 업로드
 
 @router.post("", status_code=201)
@@ -513,6 +565,8 @@ def extract_page_blocks(page):
 # PDF 다운로드 후 페이지별 텍스트 추출
 # 실제로 추출한 구조화 데이터를 DB에 저장
 def process_pdf_background(document_id: str, storage_path: str):
+    print(f"[PDF 처리 시작] document_id: {document_id}")
+
     db = SessionLocal()
     pdf = None
 
@@ -521,6 +575,7 @@ def process_pdf_background(document_id: str, storage_path: str):
         pdf_bytes = storage_client.storage.from_(BUCKET_NAME).download(
             storage_path
         )
+        print(f"[PDF 다운로드 성공] 크기: {len(pdf_bytes)} bytes")
 
         # 2. PDF 열기
         pdf = pymupdf.open(
@@ -543,6 +598,7 @@ def process_pdf_background(document_id: str, storage_path: str):
         # 4. 페이지별 데이터 추출
         for index, page in enumerate(pdf):
             page_number = index + 1
+            print(f"[페이지 처리 중] {page_number}/{total_pages}")
 
             # 페이지 전체 텍스트
             full_text = page.get_text("text")
@@ -624,7 +680,7 @@ def process_pdf_background(document_id: str, storage_path: str):
                         "bbox": json.dumps(block["bbox"])
                     }
                 )
-
+        print("[PDF 처리 완료] DB 상태 변경 시작")
         # 8. PDF 처리 완료 상태 변경
         db.execute(
             text("""
@@ -650,7 +706,9 @@ def process_pdf_background(document_id: str, storage_path: str):
     except Exception as e:
         db.rollback()
 
-        # 실패 상태로 변경
+        print("[PDF 처리 오류 발생]")
+        traceback.print_exc()
+
         db.execute(
             text("""
                 UPDATE documents
