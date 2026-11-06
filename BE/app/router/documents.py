@@ -4,6 +4,7 @@ import re
 import json
 import statistics
 
+from pydantic import BaseModel, Field
 from typing import Literal
 from fastapi import BackgroundTasks
 from app.database import SessionLocal
@@ -31,6 +32,13 @@ from app.service.storage import upload_pdf, delete_pdf
 
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+# 마지막으로 읽은 위치 요청 모델
+class ProgressRequest(BaseModel):
+    page_number: int = Field(..., ge=1)
+    block_id: str | None = None
+
 
 security = HTTPBearer()
 
@@ -985,6 +993,8 @@ def search_document(
 
 
 # 특정 문서 상세 조회 API
+# 마지막으로 읽은 위치를 저장만 하면 프론트가 다시 문서를 열었을 때 어디서 읽어야 하는지 알 수 없음
+# 추가된 column에 맞춰 마지막 위치도 같이 반환되게 수정
 @router.get("/{document_id}")
 def get_document_detail(
     document_id: str,
@@ -998,7 +1008,10 @@ def get_document_detail(
                 id,
                 file_name,
                 total_pages,
-                status
+                status,
+                last_read_page,
+                last_block_id,
+                last_studied_at
             FROM documents
             WHERE id = :document_id
               AND user_id = :user_id
@@ -1021,7 +1034,16 @@ def get_document_detail(
         "document_id": str(document["id"]),
         "file_name": document["file_name"],
         "total_pages": document["total_pages"],
-        "status": document["status"]
+        "status": document["status"],
+        "last_read_page": document["last_read_page"],
+        "last_block_id": (
+            str(document["last_block_id"])
+            if document["last_block_id"] else None
+        ),
+        "last_studied_at": (
+            document["last_studied_at"].isoformat()
+            if document["last_studied_at"] else None
+    )
     }
 
 
@@ -1094,3 +1116,97 @@ def get_document_page(
             for block in blocks
         ]
     }
+
+
+# 마지막으로 읽은 위치 저장 API
+
+@router.patch("/{document_id}/progress")
+def update_document_progress(
+    document_id: str,
+    request: ProgressRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
+    try:
+        # 1. 문서 소유권 및 페이지 존재 여부 확인
+        page = db.execute(
+            text("""
+                SELECT p.id
+                FROM pages p
+                JOIN documents d ON p.document_id = d.id
+                WHERE d.id = :document_id
+                  AND d.user_id = :user_id
+                  AND p.page_number = :page_number
+            """),
+            {
+                "document_id": document_id,
+                "user_id": str(current_user.id),
+                "page_number": request.page_number
+            }
+        ).mappings().first()
+
+        if not page:
+            raise HTTPException(
+                status_code=404,
+                detail="문서 또는 페이지를 찾을 수 없습니다."
+            )
+
+        # 2. 블록 ID가 있다면 해당 페이지에 속하는지 확인
+        if request.block_id is not None:
+            block = db.execute(
+                text("""
+                    SELECT id
+                    FROM page_blocks
+                    WHERE id = :block_id
+                      AND page_id = :page_id
+                """),
+                {
+                    "block_id": request.block_id,
+                    "page_id": str(page["id"])
+                }
+            ).mappings().first()
+
+            if not block:
+                raise HTTPException(
+                    status_code=404,
+                    detail="해당 페이지의 블록을 찾을 수 없습니다."
+                )
+
+        # 3. 마지막으로 읽은 위치 저장
+        db.execute(
+            text("""
+                UPDATE documents
+                SET
+                    last_read_page = :page_number,
+                    last_block_id = :block_id,
+                    last_studied_at = NOW()
+                WHERE id = :document_id
+                  AND user_id = :user_id
+            """),
+            {
+                "page_number": request.page_number,
+                "block_id": request.block_id,
+                "document_id": document_id,
+                "user_id": str(current_user.id)
+            }
+        )
+
+        db.commit()
+
+        return {
+            "message": "마지막으로 읽은 위치가 저장되었습니다.",
+            "document_id": document_id,
+            "last_read_page": request.page_number,
+            "last_block_id": request.block_id
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="읽은 위치 저장 중 오류가 발생했습니다."
+        )
