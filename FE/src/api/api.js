@@ -19,18 +19,19 @@ export async function askQuestion({ docId, page, question }) {
     question,
     answer_mode: 'normal',
   })
-
-  // 확인용: 응답 모양을 콘솔에 찍어요 (확인 후 지워도 돼요)
-  console.log('질문 응답:', res.data)
-
-  // 응답의 어느 칸이 답변인지 모를 때를 대비해 여러 이름을 시도해요
   const data = res.data
-  const answer =
-    typeof data === 'string'
-      ? data
-      : data.answer ?? data.answer_text ?? data.response ?? data.content
+  console.log('질문 응답:', data)
 
-  return { id: data.id, answer }
+  const questionId = data.question_id
+
+  // 질문을 '저장된 질문'에 등록해서 과거 질문 목록에 나오게 함
+  try {
+    await client.post(`/questions/${questionId}/save`)
+  } catch (e) {
+    console.error('질문 저장 실패:', e.response?.status, e.response?.data)
+  }
+
+  return { id: questionId, answer: data.answer }
 }
 
 // 저장된 질문 목록 가져오기
