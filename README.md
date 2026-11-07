@@ -244,3 +244,6 @@ Hackathon_Team01/
 gpt 테스트 영상 
 https://drive.google.com/file/d/1VqI2oGVhnUx0eWsBbrB_7ZZjYpSf71Ay/view?usp=sharing
 
+https://drive.google.com/file/d/1G9fPds7C2rot9EdFgBQUT53mwMwAXdIs/view?usp=sharing
+
+
