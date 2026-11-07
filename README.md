@@ -239,3 +239,8 @@ Hackathon_Team01/
 - 표·그림에 대한 **대체 텍스트** 생성
 - **음성으로 질문하기**와 답변 음성 출력
 - ai에게 질문할 때 쉬운 설명 / 일반 설명 중 선택할 수 있게 구현
+
+## 테스트 영상 
+gpt 테스트 영상 
+https://drive.google.com/file/d/1VqI2oGVhnUx0eWsBbrB_7ZZjYpSf71Ay/view?usp=sharing
+
